@@ -58,9 +58,9 @@ function LogEntry({ a }) {
 }
 
 // ── Tab: Stanoviště ────────────────────────────────────────────────────────
-function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationStatuses }) {
+function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChange }) {
   const { t }    = useI18n();
-  const { adjustScore, addLogEntry } = useGame();
+  const { adjustScore, adjustStationScore, addLogEntry } = useGame();
   const isOrg    = role === "Organizátor";
   const allPins  = eventData.pins ?? [];
   const myPins   = isOrg ? allPins : allPins.filter(p => p.vedouci === role);
@@ -76,6 +76,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationSt
 
   function adjust(team, delta) {
     adjustScore(eventId, team.id, delta);
+    if (activePin) adjustStationScore(eventId, activePin.id, team.id, delta);
     const now  = new Date();
     const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
     const entry = { time, team: team.name, delta: `${delta > 0 ? "+" : ""}${delta}`, station: activePin?.name ?? "" };
@@ -87,7 +88,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationSt
     <div className="flex gap-3 flex-1 min-h-0">
 
       {/* Station list */}
-      <div className="cm-box flex-shrink-0 flex flex-col" style={{ width: 208 }}>
+      <div className="cm-box flex-shrink-0 flex flex-col" style={{ width: 180 }}>
         <div className="flex items-center justify-between px-3 py-2.5 flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border)" }}>
           <span className="cm-label" style={{ fontSize: 10 }}>{t("live.myStations")}</span>
@@ -134,7 +135,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationSt
         {activePin ? (
           <>
             {/* Header */}
-            <div className="cm-box p-4 flex items-start gap-3 flex-wrap">
+            <div className="cm-box p-3 flex gap-3">
               <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 font-mono"
                 style={{ background: "var(--green)", color: "var(--bg-base)" }}>
                 {activePin.label}
@@ -145,62 +146,87 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationSt
                   <div className="font-mono text-[10px] mt-0.5" style={{ color: "var(--text-dim)" }}>🧑‍🏫 {activePin.vedouci}</div>
                 )}
                 {activePin.description && (
-                  <div className="font-mono text-[10px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{activePin.description}</div>
+                  <div className="font-mono text-[10px] mt-0.5 line-clamp-2" style={{ color: "var(--text-muted)" }}>{activePin.description}</div>
                 )}
+                {/* Status + alert buttons — 2×2 on mobile, row on sm+ */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-row gap-1 mt-2" style={{ maxWidth: 280 }}>
+                  {STATUS_ORDER.map(k => (
+                    <StatusPill key={k} status={k} active={stStatus === k}
+                      onClick={() => onStatusChange(activePin.id, k)} />
+                  ))}
+                  <button
+                    className="text-[10px] font-mono px-2 py-1 flex items-center justify-center gap-1 rounded transition-colors"
+                    style={alertSent[activePin.id]
+                      ? { border: "1px solid var(--border)", color: "var(--text-dim)", background: "transparent" }
+                      : { border: "1px solid #fca5a5", color: "#ef4444", background: "rgba(239,68,68,0.06)" }}
+                    onMouseEnter={e => { if (!alertSent[activePin.id]) e.currentTarget.style.background = "rgba(239,68,68,0.14)"; }}
+                    onMouseLeave={e => { if (!alertSent[activePin.id]) e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
+                    onClick={() => setAlertSent(prev => ({ ...prev, [activePin.id]: true }))}
+                  >
+                    <AlertTriangle size={10} />
+                    {alertSent[activePin.id] ? t("live.problemSent") : t("live.problem")}
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-1 flex-shrink-0 flex-wrap">
-                {STATUS_ORDER.map(k => (
-                  <StatusPill key={k} status={k} active={stStatus === k}
-                    onClick={() => setStationStatuses(prev => ({ ...prev, [activePin.id]: k }))} />
-                ))}
-              </div>
-              <button
-                className="font-mono text-xs px-3 py-1 flex items-center gap-1.5 flex-shrink-0 rounded transition-colors"
-                style={alertSent[activePin.id]
-                  ? { border: "1px solid var(--border)", color: "var(--text-dim)", background: "transparent" }
-                  : { border: "1px solid #fca5a5", color: "#ef4444", background: "rgba(239,68,68,0.06)" }}
-                onMouseEnter={e => { if (!alertSent[activePin.id]) e.currentTarget.style.background = "rgba(239,68,68,0.14)"; }}
-                onMouseLeave={e => { if (!alertSent[activePin.id]) e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
-                onClick={() => setAlertSent(prev => ({ ...prev, [activePin.id]: true }))}
-              >
-                <AlertTriangle size={11} />
-                {alertSent[activePin.id] ? t("live.problemSent") : t("live.problem")}
-              </button>
             </div>
 
             {/* Score cards */}
-            <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
-              {teams.map(team => (
-                <div key={team.id} className="cm-box p-4 flex flex-col items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: team.color }} />
-                    <span className="font-mono font-bold text-sm" style={{ color: "var(--text-muted)" }}>{team.name}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {teams.map(team => {
+                const stationPts = eventData.stationScores?.[activePin.id]?.[team.id] ?? 0;
+                const maxPts     = activePin.maxPoints ?? null;
+                const pct        = maxPts ? Math.min(100, Math.round((stationPts / maxPts) * 100)) : null;
+                return (
+                  <div key={team.id} className="cm-box p-3 lg:p-4 flex flex-col items-center gap-2 lg:gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: team.color }} />
+                      <span className="font-mono font-bold text-sm" style={{ color: "var(--text-muted)" }}>{team.name}</span>
+                    </div>
+                    <div className="font-mono font-black tabular-nums"
+                      style={{ fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1, color: "var(--text-primary)" }}>
+                      {(team.score ?? 0).toLocaleString("cs")}
+                    </div>
+                    <span className="cm-label" style={{ fontSize: 10 }}>{t("live.points")}</span>
+
+                    {/* Per-station score */}
+                    <div className="w-full flex flex-col gap-1.5"
+                      style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                      <div className="flex items-center justify-between font-mono text-[11px]">
+                        <span style={{ color: "var(--text-dim)" }}>Toto stanoviště</span>
+                        <span style={{ color: "var(--green)", fontWeight: 700 }}>
+                          {stationPts}
+                          {maxPts != null && <span style={{ color: "var(--text-muted)", fontWeight: 400 }}> / {maxPts}</span>}
+                        </span>
+                      </div>
+                      {maxPts != null && (
+                        <div className="w-full rounded-full overflow-hidden" style={{ height: 4, background: "var(--border)" }}>
+                          <div className="h-full rounded-full transition-all duration-300"
+                            style={{ width: `${pct}%`, background: pct >= 100 ? "var(--green)" : "var(--green)", opacity: pct >= 100 ? 1 : 0.6 }} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-1.5 w-full">
+                      {[[-10, false], [-5, false], [+5, true], [+10, true]].map(([d, pos]) => (
+                        <button
+                          key={d}
+                          className="py-1.5 font-mono font-bold text-xs rounded transition-colors"
+                          style={{
+                            border:      pos ? "1px solid var(--green)" : "1px solid #fca5a5",
+                            color:       pos ? "var(--green)"           : "#ef4444",
+                            background:  "transparent",
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = pos ? "var(--green-glow)" : "rgba(239,68,68,0.08)"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                          onClick={() => adjust(team, d)}
+                        >
+                          {d > 0 ? `+${d}` : d}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="font-mono font-black tabular-nums"
-                    style={{ fontSize: 44, lineHeight: 1, color: "var(--text-primary)" }}>
-                    {(team.score ?? 0).toLocaleString("cs")}
-                  </div>
-                  <span className="cm-label" style={{ fontSize: 10 }}>{t("live.points")}</span>
-                  <div className="grid grid-cols-4 gap-1.5 w-full">
-                    {[[-10, false], [-5, false], [+5, true], [+10, true]].map(([d, pos]) => (
-                      <button
-                        key={d}
-                        className="py-1.5 font-mono font-bold text-xs rounded transition-colors"
-                        style={{
-                          border:      pos ? "1px solid var(--green)" : "1px solid #fca5a5",
-                          color:       pos ? "var(--green)"           : "#ef4444",
-                          background:  "transparent",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = pos ? "var(--green-glow)" : "rgba(239,68,68,0.08)"}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                        onClick={() => adjust(team, d)}
-                      >
-                        {d > 0 ? `+${d}` : d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Note */}
@@ -210,7 +236,16 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationSt
                 <input className="cm-input" placeholder={t("live.notePlaceholder")}
                   value={note} onChange={e => setNote(e.target.value)} />
                 <button className="cm-btn flex-shrink-0" style={{ height: 42, fontSize: 13 }}
-                  onClick={() => setNote("")}>
+                  onClick={() => {
+                    if (note.trim() && activePin) {
+                      const now  = new Date();
+                      const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
+                      const entry = { time, team: `📝 ${note.trim()}`, delta: "", station: activePin.name ?? "" };
+                      setLog(prev => [entry, ...prev].slice(0, 50));
+                      addLogEntry(eventId, entry);
+                    }
+                    setNote("");
+                  }}>
                   {t("live.save")}
                 </button>
               </div>
@@ -224,8 +259,8 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationSt
         )}
       </div>
 
-      {/* Action log */}
-      <div className="cm-box flex-shrink-0 flex flex-col" style={{ width: 208 }}>
+      {/* Action log — hidden below xl, visible only on large screens */}
+      <div className="cm-box flex-shrink-0 flex-col hidden xl:flex" style={{ width: 200 }}>
         <SectionHeader icon={Clock} label={t("live.recentActions")} />
         <div className="overflow-y-auto flex-1">
           {log.map((a, i) => <LogEntry key={i} a={a} />)}
@@ -239,7 +274,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, setStationSt
 }
 
 // ── Tab: Přehled ───────────────────────────────────────────────────────────
-function TabPrehled({ eventId, eventData, stationStatuses, setStationStatuses }) {
+function TabPrehled({ eventId, eventData, stationStatuses, onStatusChange }) {
   const { t }  = useI18n();
   const teams  = eventData.teams ?? [];
   const pins   = eventData.pins  ?? [];
@@ -258,10 +293,10 @@ function TabPrehled({ eventId, eventData, stationStatuses, setStationStatuses })
   };
 
   return (
-    <div className="flex gap-3 flex-1 min-h-0">
+    <div className="flex flex-col lg:flex-row gap-3 flex-1 overflow-y-auto lg:overflow-hidden lg:min-h-0">
 
       {/* Ranking table */}
-      <div className="cm-box flex-1 flex flex-col min-h-0">
+      <div className="cm-box flex-1 flex flex-col lg:min-h-0 lg:overflow-hidden">
         <SectionHeader icon={Trophy} label={t("live.ranking")} />
         <div className="overflow-y-auto flex-1">
           <table className="w-full font-mono text-sm border-collapse">
@@ -308,8 +343,8 @@ function TabPrehled({ eventId, eventData, stationStatuses, setStationStatuses })
         </div>
       </div>
 
-      {/* Right column */}
-      <div className="flex flex-col gap-3 flex-shrink-0" style={{ width: 256 }}>
+      {/* Right column — below table on mobile, beside on lg with fixed width */}
+      <div className="flex flex-col gap-3 lg:w-60 lg:flex-shrink-0 lg:min-h-0 lg:overflow-hidden">
 
         {/* Station status — clickable to cycle through states */}
         <div className="cm-box flex-shrink-0 flex flex-col" style={{ maxHeight: "55%" }}>
@@ -330,10 +365,10 @@ function TabPrehled({ eventId, eventData, stationStatuses, setStationStatuses })
                   <button
                     className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0 transition-colors"
                     style={STATUS_STYLE[st] ?? STATUS_STYLE.active}
-                    onClick={() => setStationStatuses(prev => ({
-                      ...prev,
-                      [pin.id]: STATUS_ORDER[(STATUS_ORDER.indexOf(st) + 1) % STATUS_ORDER.length],
-                    }))}
+                    onClick={() => onStatusChange(
+                      pin.id,
+                      STATUS_ORDER[(STATUS_ORDER.indexOf(st) + 1) % STATUS_ORDER.length]
+                    )}
                   >
                     {STATUS_BADGE[st]}
                   </button>
@@ -361,46 +396,50 @@ function TabPrehled({ eventId, eventData, stationStatuses, setStationStatuses })
 // ── LiveView root ──────────────────────────────────────────────────────────
 export default function LiveView({ eventId, eventData, role }) {
   const { t }    = useI18n();
+  const { updateStationStatus } = useGame();
   const isOrg    = role === "Organizátor";
   const timer    = useTimer(eventData.liveState?.elapsedSeconds ?? 0, eventData.liveState?.isRunning ?? false);
   const [tab, setTab] = useState(isOrg ? "prehled" : "stanoviste");
 
-  // Shared station statuses between both tabs
-  const allPins = eventData.pins ?? [];
-  const [stationStatuses, setStationStatuses] = useState(
-    () => Object.fromEntries(allPins.map(p => [p.id, "active"]))
-  );
+  // Persisted station statuses from context (survive tab switches + sync across devices)
+  const stationStatuses = eventData.stationStatuses ?? {};
+
+  function handleStatusChange(pinId, status) {
+    updateStationStatus(eventId, pinId, status);
+  }
 
   return (
     <div className="flex flex-col gap-3 h-full p-3" style={{ background: "var(--bg-base)" }}>
 
-      {/* Top bar */}
-      <div className="cm-box px-4 py-2.5 flex items-center gap-3 flex-shrink-0 flex-wrap">
-        {/* Tab switch */}
-        <div className="flex rounded-lg overflow-hidden flex-shrink-0"
-          style={{ border: "1px solid var(--border-bright)", height: 38 }}>
-          {[["stanoviste", t("live.stations")], ["prehled", t("live.overview")]].map(([id, label]) => (
-            <button
-              key={id}
-              className="px-4 font-mono text-xs font-bold transition-colors whitespace-nowrap"
-              style={{
-                height: 38,
-                background: tab === id ? "var(--green)" : "transparent",
-                color: tab === id ? "var(--bg-base)" : "var(--text-muted)",
-              }}
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
+      {/* Top bar — 3-column: tabs | timer (centered) | LIVE badge */}
+      <div className="cm-box px-3 py-2 flex items-center flex-shrink-0" style={{ gap: 0 }}>
+        {/* Left: tab switch */}
+        <div className="flex-1 flex items-center">
+          <div className="flex rounded-lg overflow-hidden flex-shrink-0"
+            style={{ border: "1px solid var(--border-bright)", height: 36 }}>
+            {[["stanoviste", t("live.stations")], ["prehled", t("live.overview")]].map(([id, label]) => (
+              <button
+                key={id}
+                className="px-3 lg:px-4 font-mono text-xs font-bold transition-colors whitespace-nowrap"
+                style={{
+                  height: 36,
+                  background: tab === id ? "var(--green)" : "transparent",
+                  color: tab === id ? "var(--bg-base)" : "var(--text-muted)",
+                }}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Timer */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="font-mono font-bold tabular-nums px-4 flex items-center"
+        {/* Center: timer (always centered) */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="font-mono font-bold tabular-nums px-3 flex items-center"
             style={{
-              fontSize: 22,
-              height: 38,
+              fontSize: 20,
+              height: 36,
               border: "1px solid var(--border-bright)",
               borderRadius: 6,
               color: "var(--text-primary)",
@@ -409,28 +448,31 @@ export default function LiveView({ eventId, eventData, role }) {
             }}>
             {timer.formatted}
           </div>
-          <button className="cm-icon-btn" style={{ width: 38, height: 38, borderRadius: 6 }}
+          <button className="cm-icon-btn" style={{ width: 36, height: 36, borderRadius: 6 }}
             onClick={timer.toggle} title={timer.isRunning ? t("timer.pause") : t("timer.start")}>
-            {timer.isRunning ? <Pause size={15} /> : <Play size={15} />}
+            {timer.isRunning ? <Pause size={14} /> : <Play size={14} />}
           </button>
-          <button className="cm-icon-btn" style={{ width: 38, height: 38, borderRadius: 6 }}
+          <button className="cm-icon-btn" style={{ width: 36, height: 36, borderRadius: 6 }}
             onClick={timer.reset} title={t("timer.reset")}>
-            <RotateCcw size={15} />
+            <RotateCcw size={14} />
           </button>
         </div>
 
-        <span className="cm-badge-live ml-auto animate-pulse">{t("live.liveTag")}</span>
+        {/* Right: LIVE badge */}
+        <div className="flex-1 flex items-center justify-end">
+          <span className="cm-badge-live animate-pulse">{t("live.liveTag")}</span>
+        </div>
       </div>
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 flex flex-col">
         {tab === "stanoviste" && (
           <TabStanoviste eventId={eventId} eventData={eventData} role={role}
-            stationStatuses={stationStatuses} setStationStatuses={setStationStatuses} />
+            stationStatuses={stationStatuses} onStatusChange={handleStatusChange} />
         )}
         {tab === "prehled" && (
           <TabPrehled eventId={eventId} eventData={eventData}
-            stationStatuses={stationStatuses} setStationStatuses={setStationStatuses} />
+            stationStatuses={stationStatuses} onStatusChange={handleStatusChange} />
         )}
       </div>
     </div>

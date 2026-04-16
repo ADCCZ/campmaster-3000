@@ -214,6 +214,40 @@ export function GameProvider({ children }) {
     }));
   }, [setEvents]);
 
+  const adjustStationScore = useCallback((eventId, stationId, teamId, delta) => {
+    setEvents(prev => {
+      const event = prev[eventId];
+      const current = event.stationScores?.[stationId]?.[teamId] ?? 0;
+      return {
+        ...prev,
+        [eventId]: {
+          ...event,
+          stationScores: {
+            ...(event.stationScores ?? {}),
+            [stationId]: {
+              ...(event.stationScores?.[stationId] ?? {}),
+              [teamId]: Math.max(0, current + delta),
+            },
+          },
+        },
+      };
+    });
+  }, [setEvents]);
+
+  // ── Station statuses ────────────────────────────────────────────────────────
+  const updateStationStatus = useCallback((eventId, pinId, status) => {
+    setEvents(prev => ({
+      ...prev,
+      [eventId]: {
+        ...prev[eventId],
+        stationStatuses: {
+          ...(prev[eventId].stationStatuses ?? {}),
+          [pinId]: status,
+        },
+      },
+    }));
+  }, [setEvents]);
+
   // ── Action log ──────────────────────────────────────────────────────────────
   const addLogEntry = useCallback((eventId, entry) => {
     setEvents(prev => ({
@@ -248,7 +282,8 @@ export function GameProvider({ children }) {
     addPin, updatePin, deletePin,
     addTeam, updateTeam, deleteTeam,
     updateTree,
-    adjustScore, setScore,
+    adjustScore, setScore, adjustStationScore,
+    updateStationStatus,
     addLogEntry,
     updateLiveState,
     resetToDefaults,

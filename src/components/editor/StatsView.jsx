@@ -54,8 +54,14 @@ export default function StatsView({ eventData, activeDay, activeStage }) {
   const green     = dark ? "#22c55e" : "#16a34a";
   const s = { green, textDim, border };
 
-  const { teams = [], stats = {}, pins = [], tree = [] } = eventData;
+  const { teams = [], pins = [], tree = [] } = eventData;
+  const stationStatuses = eventData.stationStatuses ?? {};
 
+  // Compute live stats from persisted stationStatuses
+  const completedCount  = pins.filter(p => stationStatuses[p.id] === "done").length;
+  const skippedCount    = pins.filter(p => stationStatuses[p.id] === "skipped").length;
+  const notDoneCount    = pins.length - completedCount - skippedCount;
+  const totalPinsCount  = pins.length;
   // activeDay/activeStage use -1 for "all", convert to null for logic
   const filterDay   = (activeDay  != null && activeDay  >= 0) ? activeDay  : null;
   const filterStage = (activeStage != null && activeStage >= 0) ? activeStage : null;
@@ -63,6 +69,14 @@ export default function StatsView({ eventData, activeDay, activeStage }) {
   const ranked     = [...teams].sort((a, b) => b.score - a.score);
   const totalScore = teams.reduce((acc, tm) => acc + (tm.score ?? 0), 0);
   const avgScore   = teams.length ? Math.round(totalScore / teams.length) : 0;
+
+  const stats = {
+    totalPins:    totalPinsCount,
+    donePins:     completedCount,
+    completed:    totalPinsCount > 0 ? Math.round(completedCount / totalPinsCount * 100) : 0,
+    notCompleted: totalPinsCount > 0 ? Math.round(notDoneCount   / totalPinsCount * 100) : 0,
+    skipped:      totalPinsCount > 0 ? Math.round(skippedCount   / totalPinsCount * 100) : 0,
+  };
 
   // Filtered pins
   const filteredPins = useMemo(() => {
@@ -243,49 +257,53 @@ export default function StatsView({ eventData, activeDay, activeStage }) {
               <Trophy size={12} style={{ color: green }} />
               <span className="cm-label" style={{ fontSize: 11 }}>Pořadí týmů</span>
             </div>
-            <table className="w-full font-mono text-sm border-collapse">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
-                  {["#", "Tým", "Vedoucí", "Skóre", "Status"].map(h => (
-                    <th key={h} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-left"
-                      style={{ color: textMuted }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ranked.map((team, i) => (
-                  <tr key={team.id} style={{
-                    borderBottom: "1px solid var(--border)",
-                    background: i % 2 === 1 ? "var(--bg-secondary)" : "transparent",
-                    opacity: team.status === "disqualified" ? 0.5 : 1,
-                  }}>
-                    <td className="px-4 py-2.5 font-bold text-base" style={{ width: 40, color: i < 3 ? green : textDim }}>
-                      {MEDALS[i] ?? i + 1}
-                    </td>
-                    <td className="px-4 py-2.5 font-bold" style={{ color: "var(--text-primary)" }}>
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ background: team.color, border: "1px solid rgba(255,255,255,0.15)" }} />
-                        {team.name}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5" style={{ color: textMuted }}>{team.vedouci || "—"}</td>
-                    <td className="px-4 py-2.5 font-bold tabular-nums"
-                      style={{ color: i === 0 ? green : "var(--text-primary)" }}>
-                      {(team.score ?? 0).toLocaleString("cs")}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span className="text-xs px-2 py-0.5 rounded-full font-mono"
-                        style={(STATUS_STYLE[team.status] ?? STATUS_STYLE.finished)(s)}>
-                        {team.status}
-                      </span>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="font-mono text-sm border-collapse" style={{ minWidth: 480, width: "100%" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
+                    {["#", t("live.team"), t("teams.col.score"), "Status", t("teams.col.leader") || "Vedoucí"].map(h => (
+                      <th key={h} className={`px-3 py-2 text-xs font-bold uppercase tracking-wider text-left whitespace-nowrap${h === t("teams.col.score") ? " text-right" : ""}`}
+                        style={{ color: textMuted }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {ranked.map((team, i) => (
+                    <tr key={team.id} style={{
+                      borderBottom: "1px solid var(--border)",
+                      background: i % 2 === 1 ? "var(--bg-secondary)" : "transparent",
+                      opacity: team.status === "disqualified" ? 0.5 : 1,
+                    }}>
+                      <td className="px-3 py-2.5 font-bold text-base" style={{ width: 36, color: i < 3 ? green : textDim }}>
+                        {MEDALS[i] ?? `${i + 1}.`}
+                      </td>
+                      <td className="px-3 py-2.5 font-bold" style={{ color: "var(--text-primary)" }}>
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <span className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ background: team.color, border: "1px solid rgba(255,255,255,0.15)" }} />
+                          {team.name}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 font-bold tabular-nums text-right"
+                        style={{ color: i === 0 ? green : "var(--text-primary)" }}>
+                        {(team.score ?? 0).toLocaleString("cs")}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono whitespace-nowrap"
+                          style={(STATUS_STYLE[team.status] ?? STATUS_STYLE.finished)(s)}>
+                          {t(`teams.status.${team.status}`) || team.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: textMuted }}>
+                        {team.vedouci || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

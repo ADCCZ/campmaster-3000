@@ -6,7 +6,7 @@ import EditableLabel from "../common/EditableLabel";
 
 export default function GameTree({ eventId, eventData, activeDay, role, selectedPin, onSelectPin, addingPinFor, setAddingPinFor }) {
   const { t } = useI18n();
-  const { updateTree } = useGame();
+  const { updateTree, deletePin } = useGame();
   const isOrganizator = role === "Organizátor";
   const [openDays, setOpenDays] = useState([0, 1, 2, 3]);
 
@@ -170,7 +170,19 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
                             onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
                             onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
                             title={t("map.deleteStation")}
-                            onClick={e => e.stopPropagation()}
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (pin) {
+                                deletePin(eventId, pin.id);
+                                updateTree(eventId, tree.map(d => ({
+                                  ...d,
+                                  stages: d.stages.map(s => ({
+                                    ...s,
+                                    pinLabels: s.pinLabels.filter(l => l !== lbl),
+                                  })),
+                                })));
+                              }
+                            }}
                           >
                             <Trash2 size={9} />
                           </button>

@@ -6,7 +6,8 @@
       "Bash(npx vite:*)",
       "WebFetch(domain:claude.ai)",
       "Bash(npm run:*)",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(npx tsc *)"
     ]
   },
   "enabledPlugins": {
