@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(node -e \"require\\(''./node_modules/recharts/package.json''\\); require\\(''./node_modules/lucide-react/package.json''\\); require\\(''./node_modules/@mui/x-data-grid/package.json''\\); console.log\\(''OK''\\)\")",
+      "Bash(npx vite:*)",
+      "WebFetch(domain:claude.ai)",
+      "Bash(npm run:*)",
+      "Bash(npm list:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
+  }
+}

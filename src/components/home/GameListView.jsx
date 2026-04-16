@@ -1,0 +1,147 @@
+import { useState } from "react";
+import { Plus, Play, Trash2, MapPin, Users, Calendar } from "lucide-react";
+import { useGame } from "../../context/GameContext";
+import { useI18n } from "../../context/I18nContext";
+import { useTheme } from "../../context/ThemeContext";
+import ConfirmDialog from "../common/ConfirmDialog";
+
+const STATUS_CONFIG = {
+  active:    { color: "#22c55e", shadow: "0 0 6px #22c55e66", label: "Probíhá"      },
+  completed: { color: "#6b7280", shadow: "none",               label: "Dokončeno"    },
+  archived:  { color: "#6b7280", shadow: "none",               label: "Dokončeno"    },
+  upcoming:  { color: "#60a5fa", shadow: "0 0 6px #60a5fa66", label: "Nadcházející" },
+};
+
+function GameCard({ event, onOpen, onDelete }) {
+  const { t } = useI18n();
+  const { dark } = useTheme();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const pinCount  = event.pins?.length ?? 0;
+  const teamCount = event.teams?.length ?? 0;
+  const statusCfg = event.status ? STATUS_CONFIG[event.status] : null;
+
+  return (
+    <>
+      <div
+        className="cm-card group flex flex-col"
+        style={{ minWidth: 240, minHeight: 148 }}
+        onClick={() => onOpen(event.id)}
+      >
+        {/* Top: title + status indicator */}
+        <div className="flex items-start justify-between gap-3 mb-0">
+          <div className="font-bold text-base leading-snug" style={{ color: "var(--text-primary)" }}>
+            {event.icon} {event.name}
+          </div>
+          {statusCfg && (
+            <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5" title={statusCfg.label}>
+              <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: statusCfg.color }}>{statusCfg.label}</span>
+              <div className="w-2 h-2 rounded-full" style={{ background: statusCfg.color, boxShadow: statusCfg.shadow }} />
+            </div>
+          )}
+        </div>
+
+        {/* Spacer — pushes bottom content to card bottom */}
+        <div className="flex-1" />
+
+        {/* Bottom: date + badges + buttons */}
+        <div>
+          {event.dates && (
+            <div className="flex items-center gap-1.5 mt-2 mb-2.5" style={{ color: "var(--text-dim)" }}>
+              <Calendar size={11} />
+              <span className="font-mono text-[11px]">{event.dates}</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            <div
+              className="flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full"
+              style={{ border: "1px solid var(--border-bright)", color: "var(--green)", background: "var(--green-glow)" }}
+            >
+              <Users size={11} /> {teamCount} {t("home.teams")}
+            </div>
+            <div
+              className="flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full"
+              style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
+            >
+              <MapPin size={11} /> {pinCount} {t("home.stations")}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              className="cm-btn-primary flex-1"
+              onClick={(e) => { e.stopPropagation(); onOpen(event.id); }}
+            >
+              <Play size={14} /> {t("home.open")}
+            </button>
+            <button
+              className="flex-shrink-0 rounded-lg transition-colors"
+              style={{ width: 42, height: 42, border: dark ? "none" : "1px solid #fca5a5", background: "rgba(239,68,68,0.08)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.18)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(239,68,68,0.08)"}
+              onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
+              title={t("home.delete")}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {confirmOpen && (
+        <ConfirmDialog
+          message={`${t("home.confirmDelete")} "${event.name}"?`}
+          onConfirm={() => { onDelete(event.id); setConfirmOpen(false); }}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+export default function GameListView({ onOpenGame }) {
+  const { events, deleteEvent } = useGame();
+  const { t } = useI18n();
+  const eventList = Object.values(events);
+
+  return (
+    <div className="flex-1 overflow-auto p-6 min-h-0" style={{ background: "var(--bg-base)" }}>
+      {/* Header */}
+      <div
+        className="mb-6 pb-5"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <h1 className="font-bold text-2xl" style={{ color: "var(--text-primary)" }}>
+          {t("home.title")}
+        </h1>
+        <p className="text-sm mt-1" style={{ color: "var(--text-dim)" }}>
+          {eventList.length} {t("home.total")}
+        </p>
+      </div>
+
+      {/* Game grid */}
+      {eventList.length === 0 ? (
+        <div
+          className="cm-dashed flex flex-col items-center justify-center py-16 text-center"
+        >
+          <MapPin size={28} style={{ color: "var(--text-dim)", marginBottom: 10 }} />
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            {t("home.empty")}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-5 items-start">
+          {eventList.map(event => (
+            <GameCard
+              key={event.id}
+              event={event}
+              onOpen={onOpenGame}
+              onDelete={deleteEvent}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

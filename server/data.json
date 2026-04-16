@@ -1,0 +1,653 @@
+{
+  "events": {
+    "letni-tabor-2026": {
+      "id": "letni-tabor-2026",
+      "name": "Letní tábor 2026",
+      "icon": "⛺",
+      "dates": "1.7. – 14.7.2026",
+      "location": "Šumava",
+      "type": "Bodovací",
+      "status": "active",
+      "pins": [
+        {
+          "id": 0,
+          "label": "A",
+          "day": 0,
+          "stage": 0,
+          "order": 0,
+          "name": "Stanoviště A — Čolek",
+          "vedouci": "Jana Procházka",
+          "lat": 49.737794,
+          "lng": 13.336372,
+          "description": "Rozluštit šifru na čolku.",
+          "maxPoints": 100
+        },
+        {
+          "id": 4,
+          "label": "B",
+          "day": 0,
+          "stage": 0,
+          "order": 1,
+          "name": "Stanoviště B — Jezero",
+          "vedouci": "Jana Procházka",
+          "lat": 49.747,
+          "lng": 13.3763,
+          "description": "Přeplout jezero na raftu.",
+          "maxPoints": 80
+        },
+        {
+          "id": 1,
+          "label": "C",
+          "day": 1,
+          "stage": 0,
+          "order": 0,
+          "name": "Stanoviště C — Výsadek",
+          "vedouci": "Tomáš Blažek",
+          "lat": 49.748,
+          "lng": 13.3801,
+          "description": "Tajný výsadek v lese.",
+          "maxPoints": 120
+        },
+        {
+          "id": 2,
+          "label": "D",
+          "day": 1,
+          "stage": 0,
+          "order": 1,
+          "name": "Stanoviště D — Kódování",
+          "vedouci": "Tomáš Blažek",
+          "lat": 49.748665,
+          "lng": 13.349419,
+          "description": "Dekódovat zprávu.",
+          "maxPoints": 100
+        },
+        {
+          "id": 3,
+          "label": "E",
+          "day": 1,
+          "stage": 1,
+          "order": 0,
+          "name": "Stanoviště E — Oheň",
+          "vedouci": "Jan Novák",
+          "lat": 49.7407,
+          "lng": 13.3825,
+          "description": "Rozdělat oheň třením.",
+          "maxPoints": 90
+        },
+        {
+          "id": 5,
+          "label": "F",
+          "day": 0,
+          "stage": 0,
+          "order": 2,
+          "name": "Stanoviště F",
+          "vedouci": "",
+          "description": "",
+          "maxPoints": 100,
+          "lat": 49.7641912,
+          "lng": 13.363838
+        },
+        {
+          "id": 6,
+          "label": "G",
+          "day": 2,
+          "stage": 0,
+          "order": 0,
+          "name": "Stanoviště G",
+          "vedouci": "",
+          "description": "",
+          "maxPoints": 100,
+          "lat": 49.772008,
+          "lng": 13.379717
+        },
+        {
+          "id": 7,
+          "label": "H",
+          "day": 2,
+          "stage": 0,
+          "order": 1,
+          "name": "Stanoviště H",
+          "vedouci": "",
+          "description": "",
+          "maxPoints": 100,
+          "lat": 49.774668,
+          "lng": 13.399458
+        },
+        {
+          "id": 8,
+          "label": "I",
+          "day": 2,
+          "stage": 1,
+          "order": 0,
+          "name": "Stanoviště I",
+          "vedouci": "",
+          "description": "",
+          "maxPoints": 100,
+          "lat": 49.763969,
+          "lng": 13.391991
+        },
+        {
+          "id": 9,
+          "label": "J",
+          "day": 2,
+          "stage": 1,
+          "order": 1,
+          "name": "Stanoviště J",
+          "vedouci": "",
+          "description": "",
+          "maxPoints": 100,
+          "lat": 49.761918,
+          "lng": 13.409929
+        }
+      ],
+      "tree": [
+        {
+          "label": "Den 1 — Příjezd",
+          "stages": [
+            {
+              "label": "Etapa: Lesní hlídka",
+              "pinLabels": [
+                "A",
+                "B",
+                "F"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Den 2 — Velká hra",
+          "stages": [
+            {
+              "label": "Etapa: Výsadek v lese",
+              "pinLabels": [
+                "C",
+                "D"
+              ]
+            },
+            {
+              "label": "Etapa: Noční pochod",
+              "pinLabels": [
+                "E"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Den 3",
+          "stages": [
+            {
+              "label": "Etapa 1",
+              "pinLabels": [
+                "G",
+                "H"
+              ]
+            },
+            {
+              "label": "Etapa 2",
+              "pinLabels": [
+                "I",
+                "J"
+              ]
+            }
+          ]
+        }
+      ],
+      "teams": [
+        {
+          "id": "t0",
+          "name": "Rudé lišky",
+          "color": "#ef4444",
+          "members": 8,
+          "score": 230,
+          "max": 490,
+          "vedouci": "Jan Novák",
+          "category": "Starší",
+          "status": "active",
+          "note": ""
+        },
+        {
+          "id": "t1",
+          "name": "Modří vlci",
+          "color": "#3b82f6",
+          "members": 7,
+          "score": 280,
+          "max": 490,
+          "vedouci": "Petra Horáková",
+          "category": "Mladší",
+          "status": "active",
+          "note": "Jeden hráč nemocen"
+        },
+        {
+          "id": "t2",
+          "name": "Zelení hadi",
+          "color": "#22c55e",
+          "members": 9,
+          "score": 410,
+          "max": 490,
+          "vedouci": "Tomáš Blažek",
+          "category": "Starší",
+          "status": "active",
+          "note": ""
+        },
+        {
+          "id": "t3",
+          "name": "Žluté jestřáby",
+          "color": "#eab308",
+          "members": 6,
+          "score": 190,
+          "max": 490,
+          "vedouci": "Eva Marková",
+          "category": "Mladší",
+          "status": "disqualified",
+          "note": "Porušení pravidel v den 2 SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+        },
+        {
+          "id": "t4",
+          "name": "Bílí orli",
+          "color": "#8b5cf6",
+          "members": 8,
+          "score": 365,
+          "max": 490,
+          "vedouci": "Ondřej Šimák",
+          "category": "Starší",
+          "status": "active",
+          "note": ""
+        }
+      ],
+      "stats": {
+        "completed": 62,
+        "notCompleted": 28,
+        "skipped": 10,
+        "totalPins": 10,
+        "donePins": 6,
+        "totalScore": 1585,
+        "avgScore": 317
+      },
+      "liveState": {
+        "isRunning": false,
+        "startTime": null,
+        "elapsedSeconds": 0
+      },
+      "actionLog": [
+        {
+          "time": "0:30",
+          "team": "Bílí orli",
+          "delta": "+5",
+          "station": "Stanoviště A — Čolek"
+        },
+        {
+          "time": "0:29",
+          "team": "Bílí orli",
+          "delta": "-5",
+          "station": "Stanoviště A — Čolek"
+        }
+      ]
+    },
+    "vikendovka-jaro": {
+      "id": "vikendovka-jaro",
+      "name": "Víkendovka Jaro 2026",
+      "icon": "🌿",
+      "dates": "15.3. – 17.3.2026",
+      "location": "Brdy",
+      "type": "Orientační",
+      "status": "completed",
+      "pins": [
+        {
+          "id": 0,
+          "label": "A",
+          "day": 0,
+          "stage": 0,
+          "order": 0,
+          "name": "Stanoviště A — Start",
+          "vedouci": "Marek Dvořák",
+          "lat": 49.7488,
+          "lng": 13.3742,
+          "description": "Startovní pozice.",
+          "maxPoints": 50
+        },
+        {
+          "id": 1,
+          "label": "B",
+          "day": 0,
+          "stage": 0,
+          "order": 1,
+          "name": "Stanoviště B — Louka",
+          "vedouci": "Jana Procházka",
+          "lat": 49.7502,
+          "lng": 13.3775,
+          "description": "Přechod louky.",
+          "maxPoints": 60
+        },
+        {
+          "id": 2,
+          "label": "C",
+          "day": 0,
+          "stage": 0,
+          "order": 2,
+          "name": "Stanoviště C — Les",
+          "vedouci": "Radek Kříž",
+          "lat": 49.7478,
+          "lng": 13.3812,
+          "description": "Průzkum lesa.",
+          "maxPoints": 70
+        },
+        {
+          "id": 3,
+          "label": "D",
+          "day": 0,
+          "stage": 1,
+          "order": 0,
+          "name": "Stanoviště D — Rozcestí",
+          "vedouci": "Marek Dvořák",
+          "lat": 49.7472,
+          "lng": 13.3728,
+          "description": "Navigace.",
+          "maxPoints": 80
+        },
+        {
+          "id": 4,
+          "label": "E",
+          "day": 0,
+          "stage": 1,
+          "order": 1,
+          "name": "Stanoviště E — Starý mlýn",
+          "vedouci": "Jana Procházka",
+          "lat": 49.7485,
+          "lng": 13.3758,
+          "description": "Tajemný mlýn.",
+          "maxPoints": 90
+        },
+        {
+          "id": 5,
+          "label": "F",
+          "day": 0,
+          "stage": 1,
+          "order": 2,
+          "name": "Stanoviště F — Vrchol",
+          "vedouci": "Radek Kříž",
+          "lat": 49.7495,
+          "lng": 13.3798,
+          "description": "Na vrcholu.",
+          "maxPoints": 100
+        },
+        {
+          "id": 6,
+          "label": "G",
+          "day": 1,
+          "stage": 0,
+          "order": 0,
+          "name": "Stanoviště G — Potok",
+          "vedouci": "Marek Dvořák",
+          "lat": 49.7455,
+          "lng": 13.3765,
+          "description": "Přechod potoka.",
+          "maxPoints": 60
+        },
+        {
+          "id": 7,
+          "label": "H",
+          "day": 1,
+          "stage": 0,
+          "order": 1,
+          "name": "Stanoviště H — Tábořiště",
+          "vedouci": "Jana Procházka",
+          "lat": 49.7462,
+          "lng": 13.3835,
+          "description": "Tábor.",
+          "maxPoints": 70
+        },
+        {
+          "id": 8,
+          "label": "I",
+          "day": 1,
+          "stage": 0,
+          "order": 2,
+          "name": "Stanoviště I — Závěr",
+          "vedouci": "Radek Kříž",
+          "lat": 49.7448,
+          "lng": 13.3802,
+          "description": "Cíl.",
+          "maxPoints": 80
+        }
+      ],
+      "tree": [
+        {
+          "label": "Sobota",
+          "stages": [
+            {
+              "label": "Etapa: Průzkum okolí",
+              "pinLabels": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            {
+              "label": "Etapa: Výprava do lesa",
+              "pinLabels": [
+                "D",
+                "E",
+                "F"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Neděle",
+          "stages": [
+            {
+              "label": "Etapa: Návrat a závěr",
+              "pinLabels": [
+                "G",
+                "H",
+                "I"
+              ]
+            }
+          ]
+        }
+      ],
+      "teams": [
+        {
+          "id": "t0",
+          "name": "Vlci",
+          "color": "#6b7280",
+          "members": 6,
+          "score": 520,
+          "max": 560,
+          "vedouci": "Marek Dvořák",
+          "category": "Smíšená",
+          "status": "finished",
+          "note": ""
+        },
+        {
+          "id": "t1",
+          "name": "Medvědi",
+          "color": "#374151",
+          "members": 5,
+          "score": 480,
+          "max": 560,
+          "vedouci": "Jana Procházka",
+          "category": "Smíšená",
+          "status": "finished",
+          "note": ""
+        },
+        {
+          "id": "t2",
+          "name": "Lišky",
+          "color": "#111827",
+          "members": 7,
+          "score": 550,
+          "max": 560,
+          "vedouci": "Radek Kříž",
+          "category": "Smíšená",
+          "status": "finished",
+          "note": "Vítěz víkendovky"
+        }
+      ],
+      "stats": {
+        "completed": 85,
+        "notCompleted": 10,
+        "skipped": 5,
+        "totalPins": 9,
+        "donePins": 9,
+        "totalScore": 1550,
+        "avgScore": 517
+      },
+      "liveState": {
+        "isRunning": false,
+        "startTime": null,
+        "elapsedSeconds": 0
+      },
+      "actionLog": []
+    },
+    "den-sportu": {
+      "id": "den-sportu",
+      "name": "Den sportu 2025",
+      "icon": "🏅",
+      "dates": "20.9.2025",
+      "location": "Plzeň",
+      "type": "Bodovací",
+      "status": "archived",
+      "pins": [
+        {
+          "id": 0,
+          "label": "A",
+          "day": 0,
+          "stage": 0,
+          "order": 0,
+          "name": "Disciplína A — Sprint",
+          "vedouci": "Mgr. Novotná",
+          "lat": 49.7478,
+          "lng": 13.3755,
+          "description": "Sprint 60m.",
+          "maxPoints": 100
+        },
+        {
+          "id": 1,
+          "label": "B",
+          "day": 0,
+          "stage": 0,
+          "order": 1,
+          "name": "Disciplína B — Skok",
+          "vedouci": "Mgr. Horák",
+          "lat": 49.7493,
+          "lng": 13.3785,
+          "description": "Skok daleký.",
+          "maxPoints": 100
+        },
+        {
+          "id": 2,
+          "label": "C",
+          "day": 0,
+          "stage": 0,
+          "order": 2,
+          "name": "Disciplína C — Hod",
+          "vedouci": "Mgr. Blažková",
+          "lat": 49.748,
+          "lng": 13.3822,
+          "description": "Hod míčem.",
+          "maxPoints": 100
+        },
+        {
+          "id": 3,
+          "label": "D",
+          "day": 0,
+          "stage": 1,
+          "order": 0,
+          "name": "Disciplína D — Štafeta",
+          "vedouci": "Mgr. Šimánek",
+          "lat": 49.7462,
+          "lng": 13.379,
+          "description": "Štafeta 4×100m.",
+          "maxPoints": 100
+        }
+      ],
+      "tree": [
+        {
+          "label": "Den sportu",
+          "stages": [
+            {
+              "label": "Individuální disciplíny",
+              "pinLabels": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            {
+              "label": "Týmové disciplíny",
+              "pinLabels": [
+                "D"
+              ]
+            }
+          ]
+        }
+      ],
+      "teams": [
+        {
+          "id": "t0",
+          "name": "Třída 6A",
+          "color": "#6b7280",
+          "members": 24,
+          "score": 870,
+          "max": 400,
+          "vedouci": "Mgr. Novotná",
+          "category": "6. ročník",
+          "status": "finished",
+          "note": ""
+        },
+        {
+          "id": "t1",
+          "name": "Třída 6B",
+          "color": "#4b5563",
+          "members": 22,
+          "score": 790,
+          "max": 400,
+          "vedouci": "Mgr. Horák",
+          "category": "6. ročník",
+          "status": "finished",
+          "note": ""
+        },
+        {
+          "id": "t2",
+          "name": "Třída 7A",
+          "color": "#374151",
+          "members": 25,
+          "score": 920,
+          "max": 400,
+          "vedouci": "Mgr. Blažková",
+          "category": "7. ročník",
+          "status": "finished",
+          "note": "Celkový vítěz"
+        },
+        {
+          "id": "t3",
+          "name": "Třída 7B",
+          "color": "#1f2937",
+          "members": 23,
+          "score": 810,
+          "max": 400,
+          "vedouci": "Mgr. Šimánek",
+          "category": "7. ročník",
+          "status": "finished",
+          "note": ""
+        }
+      ],
+      "stats": {
+        "completed": 100,
+        "notCompleted": 0,
+        "skipped": 0,
+        "totalPins": 4,
+        "donePins": 4,
+        "totalScore": 3390,
+        "avgScore": 848
+      },
+      "liveState": {
+        "isRunning": false,
+        "startTime": null,
+        "elapsedSeconds": 0
+      },
+      "actionLog": []
+    }
+  }
+}
