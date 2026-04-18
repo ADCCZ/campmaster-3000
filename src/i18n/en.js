@@ -161,7 +161,7 @@ export default {
   "wizard.summaryType": "Type",
 
   "about.title": "About",
-  "about.version": "Version 2.0.1 — beta",
+  "about.version": "Version 2.0.2 — beta",
   "about.desc1": "Real-time camp game and activity management system.",
   "about.desc2": "Score tracking, team management, station map navigation.",
   "about.author": "Author",

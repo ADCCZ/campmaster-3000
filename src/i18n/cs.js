@@ -172,7 +172,7 @@ export default {
 
   // About dialog
   "about.title": "O aplikaci",
-  "about.version": "Verze 2.0.1 — beta",
+  "about.version": "Verze 2.0.2 — beta",
   "about.desc1": "Systém pro správu táborových her a aktivit v reálném čase.",
   "about.desc2": "Sledování bodů, správa týmů, mapová navigace stanovišť.",
   "about.author": "Autor",

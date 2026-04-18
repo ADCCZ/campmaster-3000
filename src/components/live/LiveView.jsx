@@ -454,13 +454,12 @@ function TabPrehled({ eventId, eventData, stationStatuses, onStatusChange }) {
                     <span className="flex-1 truncate font-mono text-xs" style={{ color: "var(--text-muted)" }}>
                       {pin.name.replace(/^stanoviště\s*/i, "") || pin.name}
                     </span>
-                    <button
-                      className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0 transition-colors"
+                    <span
+                      className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
                       style={STATUS_STYLE[st] ?? STATUS_STYLE.upcoming}
-                      onClick={() => onStatusChange(pin.id, STATUS_ORDER[(STATUS_ORDER.indexOf(st) + 1) % STATUS_ORDER.length])}
                     >
                       {STATUS_BADGE[st]}
-                    </button>
+                    </span>
                   </div>
                   {/* Per-team status */}
                   <div className="flex flex-col gap-0.5 pl-7">
