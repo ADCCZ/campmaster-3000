@@ -41,11 +41,19 @@ export default function CustomSelect({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Close when any ancestor scrolls (panel scroll moves trigger but not the fixed dropdown)
+  useEffect(() => {
+    if (!open) return;
+    function onScroll(e) { if (dropRef.current?.contains(e.target)) return; setOpen(false); }
+    window.addEventListener("scroll", onScroll, true);
+    return () => window.removeEventListener("scroll", onScroll, true);
+  }, [open]);
+
   function handleToggle() {
     if (disabled) return;
     if (!open) {
       const r = triggerRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + window.scrollY, left: r.left + window.scrollX, width: r.width });
+      setPos({ top: r.bottom, left: r.left, width: r.width });
     }
     setOpen(o => !o);
   }
@@ -90,7 +98,7 @@ export default function CustomSelect({
         <div
           ref={dropRef}
           style={{
-            position:   "absolute",
+            position:   "fixed",
             top:        pos.top + 4,
             left:       pos.left,
             minWidth:   pos.width,
@@ -101,7 +109,7 @@ export default function CustomSelect({
             border:     "1px solid var(--border-bright)",
             borderRadius: 6,
             boxShadow: "0 8px 28px rgba(0,0,0,0.28)",
-            maxHeight:  260,
+            maxHeight:  156,
             overflowY:  "auto",
           }}
         >

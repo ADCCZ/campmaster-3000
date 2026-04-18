@@ -1,14 +1,19 @@
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Plus, Trash2, MapPin } from "lucide-react";
+import { ChevronRight, ChevronDown, Plus, Trash2, MapPin, X, Pencil } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 import { useGame } from "../../context/GameContext";
 import EditableLabel from "../common/EditableLabel";
+import ConfirmDialog from "../common/ConfirmDialog";
 
-export default function GameTree({ eventId, eventData, activeDay, role, selectedPin, onSelectPin, addingPinFor, setAddingPinFor }) {
+const BTN = { padding: "3px 5px", color: "var(--text-dim)", flexShrink: 0 };
+const BTN_RED = { ...BTN, color: "var(--text-dim)" };
+
+export default function GameTree({ eventId, eventData, activeDay, role, selectedPin, onSelectPin, onEditPin, addingPinFor, setAddingPinFor, onClose }) {
   const { t } = useI18n();
   const { updateTree, deletePin } = useGame();
   const isOrganizator = role === "Organizátor";
   const [openDays, setOpenDays] = useState([0, 1, 2, 3]);
+  const [confirm, setConfirm] = useState(null); // { type, di, si, lbl, pin }
 
   const tree = eventData.tree ?? [];
   const pins = eventData.pins ?? [];
@@ -38,8 +43,33 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
       i === di ? { ...d, stages: [...d.stages, { label: `Etapa ${d.stages.length + 1}`, pinLabels: [] }] } : d
     ));
   }
+  function doDeleteStation(pin, lbl) {
+    if (pin) deletePin(eventId, pin.id);
+    updateTree(eventId, tree.map(d => ({
+      ...d,
+      stages: d.stages.map(s => ({
+        ...s,
+        pinLabels: s.pinLabels.filter(l => l !== lbl),
+      })),
+    })));
+  }
 
   const isAddingFor = (di, si) => addingPinFor?.di === di && addingPinFor?.si === si;
+
+  // Build confirm dialog message
+  const confirmMsg = confirm ? {
+    day:     `${t("map.deleteDay")} "${tree[confirm.di]?.label}"?`,
+    stage:   `${t("map.deleteStage")} "${tree[confirm.di]?.stages?.[confirm.si]?.label}"?`,
+    station: `${t("map.deleteStation")} "${confirm.pin?.name ?? confirm.lbl}"?`,
+  }[confirm.type] : "";
+
+  function handleConfirm() {
+    if (!confirm) return;
+    if (confirm.type === "day")     deleteDay(confirm.di);
+    if (confirm.type === "stage")   deleteStage(confirm.di, confirm.si);
+    if (confirm.type === "station") doDeleteStation(confirm.pin, confirm.lbl);
+    setConfirm(null);
+  }
 
   return (
     <div
@@ -52,22 +82,34 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
         style={{ borderBottom: "1px solid var(--border)" }}
       >
         <span className="cm-label" style={{ fontSize: 15 }}>{t("map.gameStructure")}</span>
-        {isOrganizator && (
-          <button
-            className="transition-colors"
-            style={{ color: "var(--text-dim)" }}
-            onMouseEnter={e => e.currentTarget.style.color = "var(--green)"}
-            onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
-            onClick={addDay}
-            title={t("map.addDay")}
-          >
-            <Plus size={13} />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {isOrganizator && (
+            <button
+              className="flex items-center gap-1 transition-colors text-xs font-mono"
+              style={{ color: "var(--text-dim)", padding: "3px 6px" }}
+              onMouseEnter={e => e.currentTarget.style.color = "var(--green)"}
+              onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
+              onClick={addDay}
+              title={t("map.addDay")}
+            >
+              <Plus size={13} /> {t("map.addDay")}
+            </button>
+          )}
+          {onClose && (
+            <button
+              className="md:hidden flex items-center"
+              style={{ color: "var(--text-muted)", padding: "3px 6px" }}
+              onClick={onClose}
+              title="Zavřít"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tree */}
-      <div className="overflow-y-auto flex-1 p-2 space-y-0.5 font-mono text-sm">
+      <div className="overflow-y-auto flex-1 p-2 space-y-0.5 font-mono text-xs">
         {tree.map((day, di) => {
           const isActive = activeDay === di;
           const isOpen   = openDays.includes(di);
@@ -75,7 +117,7 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
             <div key={di}>
               {/* Day row */}
               <div
-                className="flex items-center gap-1 w-full px-2 py-1 rounded group cursor-pointer"
+                className="flex items-center gap-1 w-full px-2 py-1 rounded cursor-pointer"
                 style={{ background: isActive ? "var(--bg-hover)" : "transparent" }}
                 onClick={() => toggleDay(di)}
               >
@@ -91,14 +133,13 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
                 />
                 {isOrganizator && (
                   <button
-                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: "var(--text-dim)" }}
+                    style={BTN_RED}
                     onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
                     onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
                     title={t("map.deleteDay")}
-                    onClick={e => { e.stopPropagation(); deleteDay(di); }}
+                    onClick={e => { e.stopPropagation(); setConfirm({ type: "day", di }); }}
                   >
-                    <Trash2 size={10} />
+                    <Trash2 size={14} />
                   </button>
                 )}
               </div>
@@ -106,7 +147,7 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
               {/* Stages */}
               {isOpen && day.stages.map((stage, si) => (
                 <div key={si} className="ml-3 mt-0.5">
-                  <div className="flex items-center gap-1 px-2 py-0.5 group">
+                  <div className="flex items-center gap-1 px-2 py-0.5">
                     <ChevronRight size={10} className="flex-shrink-0" style={{ color: "var(--text-dim)" }} />
                     <EditableLabel
                       value={stage.label}
@@ -117,24 +158,22 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
                     />
                     {isOrganizator && (
                       <button
-                        className="flex-shrink-0 transition-colors"
-                        style={{ color: isAddingFor(di, si) ? "var(--green)" : "var(--text-dim)" }}
+                        style={{ ...BTN, color: isAddingFor(di, si) ? "var(--green)" : "var(--text-dim)" }}
                         title={t("map.addStation")}
                         onClick={() => setAddingPinFor(isAddingFor(di, si) ? null : { di, si })}
                       >
-                        <Plus size={10} />
+                        <Plus size={14} />
                       </button>
                     )}
                     {isOrganizator && (
                       <button
-                        className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ color: "var(--text-dim)" }}
+                        style={BTN_RED}
                         onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
                         onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
                         title={t("map.deleteStage")}
-                        onClick={e => { e.stopPropagation(); deleteStage(di, si); }}
+                        onClick={e => { e.stopPropagation(); setConfirm({ type: "stage", di, si }); }}
                       >
-                        <Trash2 size={10} />
+                        <Trash2 size={14} />
                       </button>
                     )}
                   </div>
@@ -147,7 +186,7 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
                     return (
                       <div
                         key={lbl}
-                        className="ml-4 px-2 py-0.5 cursor-pointer rounded flex items-center gap-1 group transition-colors"
+                        className="ml-4 px-2 py-0.5 cursor-pointer rounded flex items-center gap-1 transition-colors"
                         style={{
                           background: isSel ? "var(--green-glow)" : "transparent",
                           borderLeft: isSel ? "2px solid var(--green)" : "2px solid transparent",
@@ -158,33 +197,29 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
                         onClick={() => pin && onSelectPin(pin.id)}
                       >
                         <MapPin
-                          size={9}
+                          size={11}
                           className="flex-shrink-0"
                           style={{ color: isSel ? "var(--green)" : "var(--text-muted)", opacity: isOwn ? 1 : 0.4 }}
                         />
                         <span className="truncate flex-1">{pin?.name ?? lbl}</span>
+                        {pin && (
+                          <button
+                            style={{ ...BTN, color: isSel ? "var(--green)" : "var(--text-dim)" }}
+                            title={t("props.title")}
+                            onClick={e => { e.stopPropagation(); onEditPin ? onEditPin(pin.id) : onSelectPin(pin.id); }}
+                          >
+                            <Pencil size={12} />
+                          </button>
+                        )}
                         {isOrganizator && (
                           <button
-                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ color: "var(--text-dim)" }}
+                            style={BTN_RED}
                             onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
                             onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
                             title={t("map.deleteStation")}
-                            onClick={e => {
-                              e.stopPropagation();
-                              if (pin) {
-                                deletePin(eventId, pin.id);
-                                updateTree(eventId, tree.map(d => ({
-                                  ...d,
-                                  stages: d.stages.map(s => ({
-                                    ...s,
-                                    pinLabels: s.pinLabels.filter(l => l !== lbl),
-                                  })),
-                                })));
-                              }
-                            }}
+                            onClick={e => { e.stopPropagation(); setConfirm({ type: "station", di, si, lbl, pin }); }}
                           >
-                            <Trash2 size={9} />
+                            <Trash2 size={14} />
                           </button>
                         )}
                       </div>
@@ -197,12 +232,12 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
               {isOpen && isOrganizator && (
                 <button
                   className="ml-7 mt-0.5 flex items-center gap-1 text-xs transition-colors"
-                  style={{ color: "var(--text-dim)" }}
+                  style={{ color: "var(--text-dim)", padding: "2px 4px" }}
                   onMouseEnter={e => e.currentTarget.style.color = "var(--green)"}
                   onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
                   onClick={() => addStage(di)}
                 >
-                  <Plus size={8} /> etapa
+                  <Plus size={10} /> {t("map.addStage") || "etapa"}
                 </button>
               )}
             </div>
@@ -210,14 +245,13 @@ export default function GameTree({ eventId, eventData, activeDay, role, selected
         })}
       </div>
 
-      {/* Adding pin banner */}
-      {addingPinFor && (
-        <div
-          className="px-3 py-2 text-xs font-mono flex items-center gap-1 flex-shrink-0"
-          style={{ borderTop: "1px solid var(--green)", background: "var(--green-glow)", color: "var(--green)" }}
-        >
-          <MapPin size={11} /> {t("map.clickMapToPlace")}
-        </div>
+
+      {confirm && (
+        <ConfirmDialog
+          message={confirmMsg}
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirm(null)}
+        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Map, Users, BarChart2, ChevronLeft, ChevronRight, Plus, X, MapPin } from "lucide-react";
 import GameTree        from "./GameTree";
 import MapView         from "./MapView";
@@ -92,6 +92,7 @@ function MobilePinSheet({ eventId, pin, onClose }) {
         <input
           className="cm-input"
           value={name}
+          maxLength={50}
           onChange={e => setName(e.target.value)}
           placeholder={t("map.stationName") || "Název stanoviště"}
           onKeyDown={e => e.key === "Enter" && save()}
@@ -102,6 +103,7 @@ function MobilePinSheet({ eventId, pin, onClose }) {
           value={maxPoints}
           onChange={e => setMaxPoints(Number(e.target.value))}
           min={1}
+          max={99999}
           placeholder="Max. bodů"
         />
         <button className="cm-btn-primary" onClick={save}>
@@ -125,13 +127,11 @@ function BottomNav({ active, setActive, role }) {
 
   return (
     <div
-      className="flex justify-center flex-shrink-0"
+      className="flex flex-shrink-0"
       style={{
         borderTop: "1px solid var(--border)",
         background: "var(--bg-secondary)",
-        height: 72,
-        gap: 8,
-        padding: "0 16px",
+        minHeight: 56,
       }}
     >
       {tabs.map(tab => {
@@ -140,21 +140,19 @@ function BottomNav({ active, setActive, role }) {
         return (
           <button
             key={tab.id}
-            className="flex items-center justify-center gap-3 px-10 transition-colors font-semibold relative"
+            className="flex-1 flex flex-col items-center justify-center gap-1 transition-colors font-semibold relative py-2 px-1"
             style={{
-              color:      isAct ? "var(--green)" : "var(--text-muted)",
-              background: isAct ? "var(--green-glow)" : "transparent",
+              color:        isAct ? "var(--green)" : "var(--text-muted)",
+              background:   isAct ? "var(--green-glow)" : "transparent",
               borderBottom: `3px solid ${isAct ? "var(--green)" : "transparent"}`,
-              fontSize: 17,
-              minWidth: 160,
             }}
             onClick={() => setActive(tab.id)}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span className="text-xs font-mono text-center leading-tight">{tab.label}</span>
             {isReadonly && (
               <span
-                className="absolute top-2 right-2 text-[10px] font-mono px-1 rounded"
+                className="absolute top-1 right-1 text-[9px] font-mono px-1 rounded"
                 style={{ border: "1px solid var(--border)", color: "var(--text-dim)" }}
               >
                 {t("sidebar.readOnly")}
@@ -174,39 +172,48 @@ const MIN_PANEL     = 160;
 const MAX_LEFT      = 700;
 const MAX_RIGHT     = 700;
 
-// ── Panel edge toggle button (positioned in map area) ────────────────────────
-function EdgeToggle({ side, open, onClick }) {
+// ── Panel edge toggle button (flex sibling in the row — no z-index fights) ───
+function EdgeToggle({ side, open, onClick, label }) {
   const Icon = open
     ? (side === "left" ? ChevronLeft : ChevronRight)
     : (side === "left" ? ChevronRight : ChevronLeft);
   return (
     <button
       onClick={onClick}
-      title={open ? "Skrýt panel" : "Zobrazit panel"}
+      title={label}
+      className="flex flex-col items-center justify-center flex-shrink-0 gap-1"
       style={{
-        position: "absolute",
-        top: "50%",
-        [side]: 0,
-        transform: "translateY(-50%)",
-        zIndex: 20,
-        width: 20,
-        height: 44,
-        borderRadius: side === "left" ? "0 6px 6px 0" : "6px 0 0 6px",
+        width: 32,
+        alignSelf: "stretch",
+        borderRadius: side === "left" ? "0 5px 5px 0" : "5px 0 0 5px",
         border: "1px solid var(--border-bright)",
-        borderLeft: side === "left" ? "none" : "1px solid var(--border-bright)",
+        borderLeft:  side === "left"  ? "none" : "1px solid var(--border-bright)",
         borderRight: side === "right" ? "none" : "1px solid var(--border-bright)",
-        background: "var(--bg-card)",
+        background: "var(--bg-secondary)",
         color: "var(--text-muted)",
         cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         transition: "background 0.15s, color 0.15s",
+        position: "relative",
+        zIndex: 50,
       }}
       onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--green)"; }}
-      onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-card)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-secondary)"; e.currentTarget.style.color = "var(--text-muted)"; }}
     >
-      <Icon size={11} />
+      <Icon size={13} />
+      {label && (
+        <span style={{
+          fontSize: 8,
+          writingMode: "vertical-rl",
+          transform: side === "left" ? "rotate(180deg)" : "none",
+          letterSpacing: "0.05em",
+          fontFamily: "monospace",
+          opacity: 0.65,
+          maxHeight: 72,
+          overflow: "hidden",
+        }}>
+          {label}
+        </span>
+      )}
     </button>
   );
 }
@@ -217,8 +224,26 @@ export default function EditorView({ sidebarTab, setSidebarTab, activeDay, activ
   const [addingPinFor, setAddingPinFor] = useState(null);
   const [leftWidth,    setLeftWidth]    = useState(LEFT_DEFAULT);
   const [rightWidth,   setRightWidth]   = useState(RIGHT_DEFAULT);
-  const [showLeft,     setShowLeft]     = useState(true);
-  const [showRight,    setShowRight]    = useState(true);
+  const [showLeft,     setShowLeft]     = useState(() => window.innerWidth >= 768);
+  const [showRight,    setShowRight]    = useState(() => window.innerWidth >= 768);
+
+  const selectPin = useCallback((pinId) => {
+    setSelectedPin(pinId);
+    if (pinId && window.innerWidth < 768) setShowRight(true);
+  }, []);
+
+  const editPin = useCallback((pinId) => {
+    selectPin(pinId);
+    setShowRight(true);
+  }, [selectPin]);
+
+  // On mobile: hide both panels when entering pin-adding mode
+  useEffect(() => {
+    if (addingPinFor && window.innerWidth < 768) {
+      setShowLeft(false);
+      setShowRight(false);
+    }
+  }, [addingPinFor]);
 
   const dragLeft  = useCallback((delta) => {
     setLeftWidth(w => Math.min(MAX_LEFT, Math.max(MIN_PANEL, w + delta)));
@@ -232,38 +257,40 @@ export default function EditorView({ sidebarTab, setSidebarTab, activeDay, activ
     <div className="flex flex-col h-full min-h-0">
 
       {/* ── Main area ────────────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden relative">
 
         {sidebarTab === "map" && (
           <>
-            {/* Left: game tree — hidden on mobile, toggleable on desktop */}
+            {/* Left panel */}
             {showLeft && (
-              <div className="hidden md:flex" style={{ width: leftWidth, flexShrink: 0, overflow: "hidden", position: "relative", zIndex: 10 }}>
-                <GameTree
-                  eventId={eventId}
-                  eventData={eventData}
-                  activeDay={activeDay}
-                  role={role}
-                  selectedPin={selectedPin}
-                  onSelectPin={setSelectedPin}
-                  addingPinFor={addingPinFor}
-                  setAddingPinFor={setAddingPinFor}
-                />
-              </div>
+              <>
+                {/* Mobile: overlay between both EdgeToggles */}
+                <div className="flex md:hidden absolute z-40" style={{ top: 0, left: 32, right: 32, bottom: 0 }}>
+                  <GameTree
+                    eventId={eventId} eventData={eventData} activeDay={activeDay} role={role}
+                    selectedPin={selectedPin} onSelectPin={selectPin} onEditPin={editPin}
+                    addingPinFor={addingPinFor} setAddingPinFor={setAddingPinFor}
+                    onClose={() => setShowLeft(false)}
+                  />
+                </div>
+                {/* Desktop: fixed-width side panel */}
+                <div className="hidden md:flex" style={{ width: leftWidth, flexShrink: 0, overflow: "hidden", position: "relative", zIndex: 10 }}>
+                  <GameTree
+                    eventId={eventId} eventData={eventData} activeDay={activeDay} role={role}
+                    selectedPin={selectedPin} onSelectPin={selectPin} onEditPin={editPin}
+                    addingPinFor={addingPinFor} setAddingPinFor={setAddingPinFor}
+                  />
+                </div>
+              </>
             )}
 
-            {showLeft && <div className="hidden md:block"><ResizeHandle onDrag={dragLeft} /></div>}
+            {showLeft && <div className="hidden lg:flex"><ResizeHandle onDrag={dragLeft} /></div>}
 
-            {/* Center: map — full width on mobile, panel toggles at edges */}
-            <div className="flex-1 min-w-0 overflow-hidden flex flex-col" style={{ position: "relative" }}>
-              {/* Left-edge toggle (always visible on md+) */}
-              <div className="hidden md:block">
-                <EdgeToggle side="left" open={showLeft} onClick={() => setShowLeft(v => !v)} />
-              </div>
-              {/* Right-edge toggle (always visible on md+) */}
-              <div className="hidden md:block">
-                <EdgeToggle side="right" open={showRight} onClick={() => setShowRight(v => !v)} />
-              </div>
+            <EdgeToggle side="left" open={showLeft} onClick={() => setShowLeft(v => !v)}
+              label={showLeft ? "Skrýt" : "Strom"} />
+
+            {/* Center: map — zIndex:0 contains Leaflet's internal z-indices so our overlays win */}
+            <div className="flex-1 min-w-0 overflow-hidden flex flex-col" style={{ position: "relative", zIndex: 0 }}>
               <MapView
                 eventId={eventId}
                 eventData={eventData}
@@ -271,24 +298,34 @@ export default function EditorView({ sidebarTab, setSidebarTab, activeDay, activ
                 activeStage={activeStage}
                 role={role}
                 selectedPin={selectedPin}
-                onSelectPin={setSelectedPin}
+                onSelectPin={selectPin}
                 addingPinFor={addingPinFor}
                 setAddingPinFor={setAddingPinFor}
               />
             </div>
 
-            {showRight && <div className="hidden md:block"><ResizeHandle onDrag={dragRight} /></div>}
+            <EdgeToggle side="right" open={showRight} onClick={() => setShowRight(v => !v)}
+              label={showRight ? "Skrýt" : "Info"} />
 
-            {/* Right: properties — hidden on mobile, toggleable on desktop */}
+            {showRight && <div className="hidden lg:flex"><ResizeHandle onDrag={dragRight} /></div>}
+
+            {/* Right panel */}
             {showRight && (
-              <div className="hidden md:flex" style={{ width: rightWidth, flexShrink: 0, overflow: "hidden", position: "relative", zIndex: 10 }}>
-                <PropertiesPanel
-                  eventId={eventId}
-                  eventData={eventData}
-                  selectedPin={selectedPin}
-                  role={role}
-                />
-              </div>
+              <>
+                {/* Mobile: overlay between both EdgeToggles */}
+                <div className="flex md:hidden absolute z-40" style={{ top: 0, left: 32, right: 32, bottom: 0 }}>
+                  <PropertiesPanel
+                    eventId={eventId} eventData={eventData} selectedPin={selectedPin} role={role}
+                    onClose={() => setShowRight(false)}
+                  />
+                </div>
+                {/* Desktop: fixed-width side panel */}
+                <div className="hidden md:flex" style={{ width: rightWidth, flexShrink: 0, overflow: "hidden", position: "relative", zIndex: 10 }}>
+                  <PropertiesPanel
+                    eventId={eventId} eventData={eventData} selectedPin={selectedPin} role={role}
+                  />
+                </div>
+              </>
             )}
           </>
         )}
@@ -318,8 +355,8 @@ export default function EditorView({ sidebarTab, setSidebarTab, activeDay, activ
         const activePinObj = selectedPin ? (eventData.pins ?? []).find(p => p.id === selectedPin) : null;
         return (
           <div className="md:hidden">
-            {/* FAB — shown when not in adding mode and no pin selected */}
-            {!addingPinFor && !activePinObj && (
+            {/* FAB — hidden when a panel is open */}
+            {!addingPinFor && !activePinObj && !showLeft && !showRight && (
               <button
                 onClick={() => hasStages && setAddingPinFor({ di, si })}
                 title={hasStages ? (t("map.addStation") || "Přidat stanoviště") : "Nejprve přidejte etapu v editoru"}
@@ -338,31 +375,7 @@ export default function EditorView({ sidebarTab, setSidebarTab, activeDay, activ
               </button>
             )}
 
-            {/* Cancel-adding banner */}
-            {addingPinFor && (
-              <div style={{
-                position: "fixed", bottom: 72, left: 0, right: 0, zIndex: 50,
-                background: "var(--green-glow)", borderTop: "1px solid var(--green)",
-                padding: "10px 16px",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-              }}>
-                <span className="font-mono text-sm" style={{ color: "var(--green)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <MapPin size={13} /> {t("map.clickMapToPlace") || "Klikni na mapu pro umístění"}
-                </span>
-                <button onClick={() => setAddingPinFor(null)} style={{ color: "var(--green)", display: "flex" }}>
-                  <X size={16} />
-                </button>
-              </div>
-            )}
 
-            {/* Pin edit bottom sheet */}
-            {activePinObj && !addingPinFor && (
-              <MobilePinSheet
-                eventId={eventId}
-                pin={activePinObj}
-                onClose={() => setSelectedPin(null)}
-              />
-            )}
           </div>
         );
       })()}

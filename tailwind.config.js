@@ -4,6 +4,9 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      screens: {
+        xs: "425px",
+      },
       fontFamily: {
         sans: ["'DM Sans'", "system-ui", "sans-serif"],
         mono: ["'Space Mono'", "'Courier New'", "monospace"],

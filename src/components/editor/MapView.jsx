@@ -115,8 +115,8 @@ export default function MapView({ eventId, eventData, activeDay, activeStage, ro
     if (mapRef.current || !containerRef.current) return;
 
     const map = L.map(containerRef.current, {
-      center: DEFAULT_CENTER,
-      zoom:   DEFAULT_ZOOM,
+      center: eventData.mapCenter ?? DEFAULT_CENTER,
+      zoom:   eventData.mapCenter ? 12 : DEFAULT_ZOOM,
       zoomControl: false,
       minZoom: 3,
       maxBounds: [[-85, -180], [85, 180]],
@@ -149,7 +149,7 @@ export default function MapView({ eventId, eventData, activeDay, activeStage, ro
       const nextOrder  = stagePins.length > 0 ? Math.max(...stagePins.map(p => p.order)) + 1 : 0;
       const newPin = {
         id: nextId, label: nextLabel, day: di, stage: si, order: nextOrder,
-        name: `Stanoviště ${nextLabel}`, vedouci: "", description: "", maxPoints: 100,
+        name: "Stanoviště ", vedouci: "", description: "", maxPoints: 100,
         lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6,
       };
       addPin(eventId, newPin);
@@ -247,11 +247,14 @@ export default function MapView({ eventId, eventData, activeDay, activeStage, ro
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
       {addingPinFor && (
         <div
-          className="absolute top-2 left-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs"
-          style={{ zIndex: 1000, background: "rgba(22,32,22,0.92)", border: "1px solid var(--green)", color: "var(--green)", backdropFilter: "blur(8px)" }}
+          className="absolute top-2 left-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs"
+          style={{ zIndex: 1000, background: "rgba(22,32,22,0.92)", border: "1px solid var(--green)", color: "var(--green)", backdropFilter: "blur(8px)", overflow: "hidden" }}
         >
-          <MapPin size={11} /> {t("map.clickMapToPlace")}
-          <button className="ml-1 font-bold hover:opacity-60" onClick={() => setAddingPinFor(null)}>
+          <MapPin size={11} className="flex-shrink-0" />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+            {t("map.clickMapToPlace")}
+          </span>
+          <button className="ml-1 font-bold hover:opacity-60 flex-shrink-0" onClick={() => setAddingPinFor(null)}>
             <X size={12} />
           </button>
         </div>

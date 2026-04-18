@@ -248,6 +248,23 @@ export function GameProvider({ children }) {
     }));
   }, [setEvents]);
 
+  // ── Team station statuses ───────────────────────────────────────────────────
+  const updateTeamStationStatus = useCallback((eventId, pinId, teamId, status) => {
+    setEvents(prev => {
+      const ev = prev[eventId];
+      return {
+        ...prev,
+        [eventId]: {
+          ...ev,
+          teamStationStatuses: {
+            ...(ev.teamStationStatuses ?? {}),
+            [pinId]: { ...(ev.teamStationStatuses?.[pinId] ?? {}), [teamId]: status },
+          },
+        },
+      };
+    });
+  }, [setEvents]);
+
   // ── Action log ──────────────────────────────────────────────────────────────
   const addLogEntry = useCallback((eventId, entry) => {
     setEvents(prev => ({
@@ -283,7 +300,7 @@ export function GameProvider({ children }) {
     addTeam, updateTeam, deleteTeam,
     updateTree,
     adjustScore, setScore, adjustStationScore,
-    updateStationStatus,
+    updateStationStatus, updateTeamStationStatus,
     addLogEntry,
     updateLiveState,
     resetToDefaults,

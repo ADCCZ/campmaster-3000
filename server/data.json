@@ -5,9 +5,11 @@
       "name": "Letní tábor 2026",
       "icon": "⛺",
       "dates": "1.7. – 14.7.2026",
+      "dateStart": "2026-07-01",
+      "dateEnd": "2026-07-14",
+      "status": "upcoming",
       "location": "Šumava",
       "type": "Bodovací",
-      "status": "active",
       "pins": [
         {
           "id": 0,
@@ -84,8 +86,8 @@
           "vedouci": "",
           "description": "",
           "maxPoints": 100,
-          "lat": 49.7641912,
-          "lng": 13.363838
+          "lat": 49.771287,
+          "lng": 13.358688
         },
         {
           "id": 6,
@@ -123,8 +125,8 @@
           "vedouci": "",
           "description": "",
           "maxPoints": 100,
-          "lat": 49.763969,
-          "lng": 13.391991
+          "lat": 49.762084,
+          "lng": 13.389758
         },
         {
           "id": 9,
@@ -198,7 +200,7 @@
           "name": "Rudé lišky",
           "color": "#ef4444",
           "members": 8,
-          "score": 230,
+          "score": 235,
           "max": 490,
           "vedouci": "Jan Novák",
           "category": "Starší",
@@ -270,6 +272,24 @@
       },
       "actionLog": [
         {
+          "time": "11:23",
+          "team": "Rudé lišky",
+          "delta": "-5",
+          "station": "Stanoviště A — Čolek"
+        },
+        {
+          "time": "11:23",
+          "team": "Rudé lišky",
+          "delta": "+5",
+          "station": "Stanoviště A — Čolek"
+        },
+        {
+          "time": "11:23",
+          "team": "Rudé lišky",
+          "delta": "+5",
+          "station": "Stanoviště A — Čolek"
+        },
+        {
           "time": "0:30",
           "team": "Bílí orli",
           "delta": "+5",
@@ -281,16 +301,23 @@
           "delta": "-5",
           "station": "Stanoviště A — Čolek"
         }
-      ]
+      ],
+      "stationScores": {
+        "0": {
+          "t0": 5
+        }
+      }
     },
     "vikendovka-jaro": {
       "id": "vikendovka-jaro",
       "name": "Víkendovka Jaro 2026",
       "icon": "🌿",
       "dates": "15.3. – 17.3.2026",
+      "dateStart": "2026-03-15",
+      "dateEnd": "2026-03-17",
+      "status": "completed",
       "location": "Brdy",
       "type": "Orientační",
-      "status": "completed",
       "pins": [
         {
           "id": 0,
@@ -505,9 +532,11 @@
       "name": "Den sportu 2025",
       "icon": "🏅",
       "dates": "20.9.2025",
+      "dateStart": "2025-09-20",
+      "dateEnd": "2025-09-20",
+      "status": "completed",
       "location": "Plzeň",
       "type": "Bodovací",
-      "status": "archived",
       "pins": [
         {
           "id": 0,

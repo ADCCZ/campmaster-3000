@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, X } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 import { useGame } from "../../context/GameContext";
 import { getVedouciList } from "../../data/defaultData";
 import CustomSelect from "../common/CustomSelect";
+import CharCounter from "../common/CharCounter";
 import {
   validateRequired, validateLat, validateLng, validatePositiveNumber,
   tError, firstError,
@@ -11,8 +12,8 @@ import {
 
 const NAME_MAX  = 50;
 const DESC_MAX  = 400;
-const PTS_MAX   = 5;   // max digits
-const COORD_MAX = 12;  // "-180.123456" = 11 chars, +1 buffer
+const PTS_MAX   = 5;
+const COORD_MAX = 12;
 
 function Field({ label, error, children }) {
   return (
@@ -21,20 +22,6 @@ function Field({ label, error, children }) {
       {children}
       {error && <span className="cm-error">{error}</span>}
     </div>
-  );
-}
-
-function CharCounter({ value, max }) {
-  const len   = value.length;
-  const near  = len >= max * 0.85;
-  const over  = len >= max;
-  return (
-    <span
-      className="text-[10px] font-mono ml-auto"
-      style={{ color: over ? "#ef4444" : near ? "#f59e0b" : "var(--text-dim)" }}
-    >
-      {len}/{max}
-    </span>
   );
 }
 
@@ -49,15 +36,16 @@ function filterCoord(raw) {
   return v.slice(0, COORD_MAX);
 }
 
-export default function PropertiesPanel({ eventId, eventData, selectedPin, role }) {
+export default function PropertiesPanel({ eventId, eventData, selectedPin, role, onClose }) {
   const { t }      = useI18n();
-  const { updatePin, deletePin } = useGame();
+  const { updatePin, deletePin, updateTree } = useGame();
   const isOrganizator = role === "Organizátor";
 
   const selPin  = (eventData.pins ?? []).find(p => p.id === selectedPin) ?? null;
   const canEdit = isOrganizator || selPin?.vedouci === role;
 
-  const [form,   setForm]   = useState({ name: "", lat: "", lng: "", vedouci: "", description: "", maxPoints: "" });
+  const [form,   setForm]   = useState({ name: "", label: "", lat: "", lng: "", vedouci: "", description: "", maxPoints: "" });
+  const labelManualRef = useRef(false);
   const [errors, setErrors] = useState({});
   const [saved,  setSaved]  = useState(false);
 
@@ -72,6 +60,7 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role 
     if (isNewPin) {
       const initial = {
         name:        selPin.name        ?? "",
+        label:       selPin.label       ?? "",
         lat:         selPin.lat         != null ? String(selPin.lat) : "",
         lng:         selPin.lng         != null ? String(selPin.lng) : "",
         vedouci:     selPin.vedouci     ?? "",
@@ -79,6 +68,7 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role 
         maxPoints:   selPin.maxPoints   != null ? String(selPin.maxPoints) : "",
       };
       origFormRef.current = initial;
+      labelManualRef.current = false;
       setForm(initial);
       setErrors({});
       setSaved(false);
@@ -93,7 +83,17 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role 
   }, [selectedPin, selPin?.lat, selPin?.lng]); // eslint-disable-line
 
   function setField(key, val) {
-    setForm(prev => ({ ...prev, [key]: val }));
+    setForm(prev => {
+      const next = { ...prev, [key]: val };
+      if (key === "label") {
+        labelManualRef.current = true;
+      }
+      if (key === "name" && !labelManualRef.current) {
+        const suffix = val.trim().replace(/^stanoviště\s*[-–]?\s*/i, "");
+        next.label = suffix.slice(0, 3).toUpperCase();
+      }
+      return next;
+    });
     setErrors(prev => ({ ...prev, [key]: null }));
     setSaved(false);
   }
@@ -111,15 +111,28 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role 
 
   function handleSave() {
     if (!validate()) return;
+    const oldLabel = selPin.label;
+    const newLabel = form.label.trim() || oldLabel;
     updatePin(eventId, selPin.id, {
       name:        form.name.trim(),
+      label:       newLabel,
       lat:         form.lat !== "" ? parseFloat(form.lat) : null,
       lng:         form.lng !== "" ? parseFloat(form.lng) : null,
       vedouci:     form.vedouci,
       description: form.description,
       maxPoints:   parseInt(form.maxPoints, 10) || 0,
     });
-    origFormRef.current = { ...form, name: form.name.trim() };
+    if (newLabel !== oldLabel) {
+      const tree = eventData.tree ?? [];
+      updateTree(eventId, tree.map(day => ({
+        ...day,
+        stages: day.stages.map(stage => ({
+          ...stage,
+          pinLabels: stage.pinLabels.map(l => l === oldLabel ? newLabel : l),
+        })),
+      })));
+    }
+    origFormRef.current = { ...form, name: form.name.trim(), label: newLabel };
     setSaved(true);
   }
 
@@ -160,8 +173,18 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role 
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: "var(--bg-card)", borderLeft: "1px solid var(--border)" }}>
-      <div className="border-b-2 border-gray-300 px-3 py-2 flex-shrink-0">
+      <div className="border-b-2 border-gray-300 px-3 py-2 flex-shrink-0 flex items-center justify-between">
         <span className="cm-label" style={{ fontSize: 15 }}>{t("props.title")}</span>
+        {onClose && (
+          <button
+            className="md:hidden flex items-center"
+            style={{ color: "var(--text-muted)", padding: "3px 6px" }}
+            onClick={onClose}
+            title="Zavřít"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {selPin === null ? (
@@ -173,50 +196,53 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role 
         </div>
       ) : (
         <div className="overflow-y-auto flex-1 p-3 font-mono space-y-3">
-          {/* Badge */}
-          <div
-            className="flex items-center gap-3 pb-3 flex-shrink-0"
-            style={{ borderBottom: "1px solid var(--border)" }}
-          >
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
-              style={{
-                background:  canEdit ? "var(--green)" : "var(--text-dim)",
-                color:       "var(--bg-base)",
-                boxShadow:   canEdit ? "0 0 10px var(--green-glow)" : "none",
-              }}
-            >
-              {selPin.label}
-            </div>
-            <div className="min-w-0">
-              <div className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
-                {t("props.day")} {selPin.day + 1} &nbsp;/&nbsp; {t("props.stage")} {selPin.stage + 1}
-              </div>
-              {!canEdit && (
-                <div
-                  className="text-[10px] font-mono mt-0.5 inline-block px-1.5 py-0.5 rounded"
-                  style={{ border: "1px solid var(--border)", color: "var(--text-dim)" }}
-                >
-                  {t("props.readOnly")}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Name */}
+          {/* Name + editable badge */}
           <div className="cm-field">
             <div className="flex items-center gap-1">
               <label className="cm-field-label flex-1">{t("props.stationName")}</label>
               <CharCounter value={form.name} max={NAME_MAX} />
             </div>
-            <input
-              className={`cm-input ${errors.name ? "cm-input-error" : ""} ${!canEdit ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}`}
-              value={form.name}
-              maxLength={NAME_MAX}
-              onChange={e => setField("name", e.target.value)}
-              readOnly={!canEdit}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                className="font-bold text-sm text-center flex-shrink-0"
+                style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  background: canEdit ? "var(--green)" : "var(--text-dim)",
+                  color: "var(--bg-base)",
+                  border: "none",
+                  outline: canEdit ? "2px solid transparent" : "none",
+                  cursor: canEdit ? "text" : "default",
+                  boxShadow: canEdit ? "0 0 10px var(--green-glow)" : "none",
+                }}
+                value={form.label}
+                maxLength={3}
+                onChange={e => setField("label", e.target.value.toUpperCase().slice(0, 3))}
+                readOnly={!canEdit}
+                title="Zkratka stanoviště (max 3 znaky)"
+              />
+              <input
+                className={`cm-input flex-1 ${errors.name ? "cm-input-error" : ""} ${!canEdit ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}`}
+                value={form.name}
+                maxLength={NAME_MAX}
+                onChange={e => setField("name", e.target.value)}
+                readOnly={!canEdit}
+              />
+            </div>
             {errors.name && <span className="cm-error">{errors.name}</span>}
+          </div>
+
+          {/* Day / Stage — small, dim */}
+          <div className="flex items-center gap-1.5 pb-2 flex-shrink-0 font-mono text-[11px]"
+            style={{ borderBottom: "1px solid var(--border)", color: "var(--text-dim)" }}
+          >
+            <span>{t("props.day")} {selPin.day + 1}</span>
+            <span>/</span>
+            <span>{t("props.stage")} {selPin.stage + 1}</span>
+            {!canEdit && (
+              <span className="ml-1 px-1.5 py-0.5 rounded" style={{ border: "1px solid var(--border)", color: "var(--text-dim)" }}>
+                {t("props.readOnly")}
+              </span>
+            )}
           </div>
 
           {/* GPS */}
@@ -256,7 +282,7 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role 
                 value={form.vedouci}
                 onChange={v => setField("vedouci", v)}
                 placeholder={t("props.leaderSelect")}
-                options={leaders.filter(l => l !== "Organizátor").map(l => ({ value: l, label: l }))}
+                options={[{ value: "", label: t("props.noLeader") || "Žádné" }, ...leaders.filter(l => l !== "Organizátor").map(l => ({ value: l, label: l }))]}
               />
             </Field>
           )}

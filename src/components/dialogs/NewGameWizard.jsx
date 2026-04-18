@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Loader, MapPin } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 import { useGame } from "../../context/GameContext";
 import ModalShell from "../common/ModalShell";
@@ -30,11 +30,43 @@ export default function NewGameWizard({ onClose, onCreated }) {
 
   // Form state
   const [form, setForm] = useState({
-    name: "", dateStart: "", dateEnd: "", location: "", type: "Bodovací",
+    name: "", dateStart: "", dateEnd: "", location: "", type: "Víkendovka",
+    lat: null, lng: null,
     teamCount: "4", maxPlayers: "8",
   });
   const [teams, setTeams] = useState([]);
   const [newTeamName, setNewTeamName] = useState("");
+
+  // Geocoding state
+  const [geoSuggestions, setGeoSuggestions] = useState([]);
+  const [geoLoading,     setGeoLoading]     = useState(false);
+  const geoTimer = useRef(null);
+
+  function onLocationChange(val) {
+    setForm(f => ({ ...f, location: val, lat: null, lng: null }));
+    setErrors(prev => ({ ...prev, location: null }));
+    clearTimeout(geoTimer.current);
+    if (val.trim().length < 3) { setGeoSuggestions([]); return; }
+    geoTimer.current = setTimeout(async () => {
+      setGeoLoading(true);
+      try {
+        const res  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=5&addressdetails=1&accept-language=cs,en`);
+        const data = await res.json();
+        setGeoSuggestions(data.map(r => ({
+          short:   r.name || r.display_name.split(",")[0].trim(),
+          full:    r.display_name,
+          lat:     parseFloat(r.lat),
+          lng:     parseFloat(r.lon),
+        })));
+      } catch { setGeoSuggestions([]); }
+      finally  { setGeoLoading(false); }
+    }, 420);
+  }
+
+  function pickGeo(s) {
+    setForm(f => ({ ...f, location: s.short, lat: s.lat, lng: s.lng }));
+    setGeoSuggestions([]);
+  }
 
   function setField(key, value) {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -45,8 +77,9 @@ export default function NewGameWizard({ onClose, onCreated }) {
   function validateStep1() {
     const e = {};
     e.name      = tError(t, validateRequired(form.name));
-    e.dateStart = tError(t, validateDate(form.dateStart));
-    e.dateEnd   = tError(t, validateDate(form.dateEnd));
+    e.dateStart = tError(t, validateRequired(form.dateStart));
+    e.dateEnd   = tError(t, validateRequired(form.dateEnd));
+    e.location  = tError(t, validateRequired(form.location));
     setErrors(e);
     return !Object.values(e).some(Boolean);
   }
@@ -83,6 +116,8 @@ export default function NewGameWizard({ onClose, onCreated }) {
     setNewTeamName("");
   }
 
+  const fmtDate = iso => { if (!iso) return ""; const [y,m,d] = iso.split("-"); return `${String(+d).padStart(2,"0")}.${String(+m).padStart(2,"0")}.${y}`; };
+
   function handleCreate() {
     const id = `game-${Date.now()}`;
     const defaultTeams = teams.length > 0 ? teams : Array.from({ length: Number(form.teamCount) || 4 }, (_, i) => {
@@ -95,9 +130,13 @@ export default function NewGameWizard({ onClose, onCreated }) {
     });
     addEvent({
       id, name: form.name, icon: "⛺",
-      dates: `${form.dateStart} – ${form.dateEnd}`,
+      dates: form.dateStart || form.dateEnd ? `${fmtDate(form.dateStart)} – ${fmtDate(form.dateEnd)}` : "",
+      dateStart: form.dateStart || null,
+      dateEnd: form.dateEnd || null,
+      status: "upcoming",
       createdAt: new Date().toISOString(),
-      location: form.location, type: form.type, status: "active",
+      location: form.location, type: form.type,
+      mapCenter: form.lat && form.lng ? [form.lat, form.lng] : null,
       pins: [], tree: [], teams: defaultTeams,
       stats: { completed: 0, notCompleted: 0, skipped: 0, totalPins: 0, donePins: 0, totalScore: 0, avgScore: 0 },
       liveState: { isRunning: false, startTime: null, elapsedSeconds: 0 },
@@ -145,30 +184,64 @@ export default function NewGameWizard({ onClose, onCreated }) {
           <Field label={t("wizard.eventName")} error={errors.name}>
             <input className={`cm-input ${errors.name ? "cm-input-error" : ""}`}
               placeholder={t("wizard.eventNamePlaceholder")}
+              maxLength={80}
               value={form.name} onChange={e => setField("name", e.target.value)} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label={t("wizard.dateStart")} error={errors.dateStart}>
               <input className={`cm-input ${errors.dateStart ? "cm-input-error" : ""}`}
-                placeholder={t("wizard.datePlaceholder")}
+                type="date"
                 value={form.dateStart} onChange={e => setField("dateStart", e.target.value)} />
             </Field>
             <Field label={t("wizard.dateEnd")} error={errors.dateEnd}>
               <input className={`cm-input ${errors.dateEnd ? "cm-input-error" : ""}`}
-                placeholder={t("wizard.datePlaceholder")}
+                type="date"
                 value={form.dateEnd} onChange={e => setField("dateEnd", e.target.value)} />
             </Field>
           </div>
-          <Field label={t("wizard.location")}>
-            <input className="cm-input" placeholder={t("wizard.locationPlaceholder")}
-              value={form.location} onChange={e => setField("location", e.target.value)} />
+          <Field label={t("wizard.location")} error={errors.location}>
+            <div style={{ position: "relative" }}>
+              <div style={{ position: "relative" }}>
+                <input className={`cm-input ${errors.location ? "cm-input-error" : ""}`}
+                  placeholder={t("wizard.locationPlaceholder")}
+                  maxLength={80}
+                  value={form.location} onChange={e => onLocationChange(e.target.value)}
+                  style={{ paddingRight: 36 }}
+                  autoComplete="off"
+                />
+                <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", display: "flex", color: form.lat ? "var(--green)" : "var(--text-dim)" }}>
+                  {geoLoading ? <Loader size={14} className="animate-spin" /> : <MapPin size={14} />}
+                </span>
+              </div>
+              {geoSuggestions.length > 0 && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+                  background: "var(--bg-card)", border: "1px solid var(--border-bright)",
+                  borderRadius: 6, boxShadow: "0 8px 28px rgba(0,0,0,0.3)",
+                  maxHeight: 200, overflowY: "auto", zIndex: 200,
+                }}>
+                  {geoSuggestions.map((s, i) => (
+                    <div key={i}
+                      className="px-3 py-2 cursor-pointer"
+                      style={{ borderBottom: "1px solid var(--border)", transition: "background 0.1s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      onClick={() => pickGeo(s)}
+                    >
+                      <div className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{s.short}</div>
+                      <div className="font-mono text-[10px] truncate" style={{ color: "var(--text-dim)" }}>{s.full}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
           <Field label={t("wizard.gameType")}>
             <CustomSelect
               className="w-full"
               value={form.type}
               onChange={v => setField("type", v)}
-              options={["wizard.type.scoring","wizard.type.orienteering","wizard.type.mixed"].map(k => ({ value: t(k), label: t(k) }))}
+              options={["wizard.type.weekend","wizard.type.camp","wizard.type.national","wizard.type.oneday","wizard.type.troop"].map(k => ({ value: t(k), label: t(k) }))}
             />
           </Field>
         </div>
@@ -204,11 +277,12 @@ export default function NewGameWizard({ onClose, onCreated }) {
               ))}
             </div>
           )}
-          <div className="flex gap-2">
-            <input className="cm-input" placeholder="Název nového týmu..."
+          <div className="cm-addteam-row">
+            <input className="cm-input cm-addteam-input" placeholder="Název nového týmu..."
+              maxLength={60}
               value={newTeamName} onChange={e => setNewTeamName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && addTeam()} />
-            <button className="cm-btn flex items-center gap-1 text-xs flex-shrink-0" onClick={addTeam}>
+            <button className="cm-btn cm-addteam-btn flex items-center gap-1 text-xs" onClick={addTeam}>
               <Plus size={12} /> {t("wizard.addTeam")}
             </button>
           </div>
@@ -222,14 +296,14 @@ export default function NewGameWizard({ onClose, onCreated }) {
           <div className="cm-box p-3 space-y-2 text-sm">
             {[
               [t("wizard.summaryName"),     form.name || "—"],
-              [t("wizard.summaryDate"),     `${form.dateStart} – ${form.dateEnd}` || "—"],
+              [t("wizard.summaryDate"),     form.dateStart || form.dateEnd ? `${fmtDate(form.dateStart)} – ${fmtDate(form.dateEnd)}` : "—"],
               [t("wizard.summaryLocation"), form.location || "—"],
               [t("wizard.summaryTeams"),    `${teams.length || form.teamCount} týmů`],
               [t("wizard.summaryType"),     form.type],
             ].map(([k, v]) => (
-              <div key={k} className="flex justify-between pb-1" style={{ borderBottom: "1px solid var(--border)" }}>
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>{k}</span>
-                <span className="font-bold text-xs" style={{ color: "var(--text-primary)" }}>{v}</span>
+              <div key={k} className="flex justify-between gap-3 pb-1" style={{ borderBottom: "1px solid var(--border)" }}>
+                <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>{k}</span>
+                <span className="font-bold text-xs text-right" style={{ color: "var(--text-primary)" }}>{v}</span>
               </div>
             ))}
           </div>
@@ -239,11 +313,11 @@ export default function NewGameWizard({ onClose, onCreated }) {
         </div>
       )}
 
-      <div className="flex justify-between mt-6">
-        <button className="cm-btn" onClick={handleBack}>
+      <div className="flex flex-wrap gap-2 mt-6">
+        <button className="cm-btn" style={{ height: 42, flex: "1 1 auto", whiteSpace: "nowrap" }} onClick={handleBack}>
           {step === 0 ? t("wizard.cancel") : t("wizard.back")}
         </button>
-        <button className="cm-btn-primary" onClick={step < 2 ? handleNext : handleCreate}>
+        <button className="cm-btn-primary" style={{ height: 42, flex: "1 1 auto", whiteSpace: "nowrap" }} onClick={step < 2 ? handleNext : handleCreate}>
           {step < 2 ? t("wizard.continue") : t("wizard.create")}
         </button>
       </div>

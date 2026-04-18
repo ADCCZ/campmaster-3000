@@ -4,6 +4,7 @@ import { useGame } from "../../context/GameContext";
 import { useI18n } from "../../context/I18nContext";
 import { useTheme } from "../../context/ThemeContext";
 import ConfirmDialog from "../common/ConfirmDialog";
+import { computeEventStatus } from "../../utils/validation";
 
 const STATUS_CONFIG = {
   active:    { color: "#22c55e", shadow: "0 0 6px #22c55e66", label: "Probíhá"      },
@@ -19,13 +20,14 @@ function GameCard({ event, onOpen, onDelete }) {
 
   const pinCount  = event.pins?.length ?? 0;
   const teamCount = event.teams?.length ?? 0;
-  const statusCfg = event.status ? STATUS_CONFIG[event.status] : null;
+  const statusKey = computeEventStatus(event);
+  const statusCfg = STATUS_CONFIG[statusKey] ?? null;
 
   return (
     <>
       <div
         className="cm-card group flex flex-col"
-        style={{ minWidth: 240, minHeight: 148 }}
+        style={{ width: 400, minHeight: 148 }}
         onClick={() => onOpen(event.id)}
       >
         {/* Top: title + status indicator */}
@@ -34,9 +36,12 @@ function GameCard({ event, onOpen, onDelete }) {
             {event.icon} {event.name}
           </div>
           {statusCfg && (
-            <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5" title={statusCfg.label}>
+            <div
+              className="flex items-center gap-1.5 flex-shrink-0 mt-0.5"
+              style={{ padding: "2px 6px", border: `1px solid ${statusCfg.color}33`, borderRadius: 6 }}
+            >
               <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: statusCfg.color }}>{statusCfg.label}</span>
-              <div className="w-2 h-2 rounded-full" style={{ background: statusCfg.color, boxShadow: statusCfg.shadow }} />
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: statusCfg.color, boxShadow: statusCfg.shadow }} />
             </div>
           )}
         </div>
@@ -131,7 +136,7 @@ export default function GameListView({ onOpenGame }) {
           </p>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-5 items-start">
+        <div className="flex flex-wrap gap-5 items-start justify-center sm:justify-start">
           {eventList.map(event => (
             <GameCard
               key={event.id}

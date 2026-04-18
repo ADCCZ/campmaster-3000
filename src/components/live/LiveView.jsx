@@ -5,23 +5,31 @@ import { useGame } from "../../context/GameContext";
 import { useTimer } from "../../hooks/useTimer";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
-const STATUS_ORDER = ["active", "done", "skipped"];
+const STATUS_ORDER      = ["upcoming", "active", "done", "skipped"];
+const TEAM_STATUS_ORDER = ["upcoming", "done", "skipped"];
 
 // ── Status pill ────────────────────────────────────────────────────────────
-function StatusPill({ status, active, onClick }) {
+function StatusPill({ status, active, onClick, className = "" }) {
   const { t } = useI18n();
-  const labels = { active: t("live.status.active"), done: t("live.status.done"), skipped: t("live.status.skipped") };
+  const labels = {
+    upcoming: t("live.status.upcoming"),
+    active:   t("live.status.active"),
+    done:     t("live.status.done"),
+    skipped:  t("live.status.skipped"),
+  };
   const styles = {
-    active:  active ? { border: "1px solid var(--green)",         color: "var(--green)",       background: "var(--green-glow)" }
-                    : { border: "1px solid var(--border)",         color: "var(--text-dim)",     background: "transparent" },
-    done:    active ? { border: "1px solid var(--border-bright)", color: "var(--text-primary)", background: "var(--bg-hover)" }
-                    : { border: "1px solid var(--border)",         color: "var(--text-dim)",     background: "transparent" },
-    skipped: active ? { border: "1px solid var(--border)",        color: "var(--text-muted)",   background: "var(--bg-secondary)" }
-                    : { border: "1px solid var(--border)",         color: "var(--text-dim)",     background: "transparent" },
+    upcoming: active ? { border: "1px solid var(--border-bright)", color: "var(--text-dim)",     background: "var(--bg-secondary)" }
+                     : { border: "1px solid var(--border)",         color: "var(--text-dim)",     background: "transparent" },
+    active:   active ? { border: "1px solid var(--green)",         color: "var(--green)",         background: "var(--green-glow)" }
+                     : { border: "1px solid var(--border)",         color: "var(--text-dim)",     background: "transparent" },
+    done:     active ? { border: "1px solid var(--border-bright)", color: "var(--text-primary)", background: "var(--bg-hover)" }
+                     : { border: "1px solid var(--border)",         color: "var(--text-dim)",     background: "transparent" },
+    skipped:  active ? { border: "1px solid var(--border)",        color: "var(--text-muted)",   background: "var(--bg-secondary)" }
+                     : { border: "1px solid var(--border)",         color: "var(--text-dim)",     background: "transparent" },
   };
   return (
     <button
-      className="text-[10px] font-mono px-2.5 py-1 rounded transition-colors"
+      className={`text-[10px] font-mono px-2.5 py-1 rounded transition-colors whitespace-nowrap ${className}`}
       style={styles[status] ?? styles.active}
       onClick={onClick}
     >
@@ -48,39 +56,103 @@ function LogEntry({ a }) {
       <div className="flex items-center justify-between mb-0.5">
         <span style={{ color: "var(--text-dim)" }}>{a.time}</span>
         <span className="font-bold" style={{ color: a.delta?.startsWith("+") ? "var(--green)" : "#ef4444" }}>
-          {a.delta} b.
+          {a.delta}{a.delta ? " b." : ""}
         </span>
       </div>
       <div className="font-semibold truncate" style={{ color: "var(--text-primary)" }}>{a.team}</div>
       <div className="text-[10px] truncate" style={{ color: "var(--text-dim)" }}>{a.station}</div>
+      {a.by && (
+        <div className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
+          👤 {a.by}
+        </div>
+      )}
     </div>
+  );
+}
+
+// ── Station list row ───────────────────────────────────────────────────────
+function PinRow({ pin, stationStatuses, activeStationId, setActiveStationId }) {
+  const st    = stationStatuses[pin.id] ?? "upcoming";
+  const isAct = pin.id === activeStationId;
+  return (
+    <button
+      className="w-full text-left px-3 py-2 font-mono text-xs flex items-center gap-2 transition-colors"
+      style={{
+        borderBottom: "1px solid var(--border)",
+        borderLeft: `2px solid ${isAct ? "var(--green)" : "transparent"}`,
+        background: isAct ? "var(--green-glow)" : "transparent",
+        color: isAct ? "var(--green)" : "var(--text-muted)",
+      }}
+      onMouseEnter={e => { if (!isAct) e.currentTarget.style.background = "var(--bg-hover)"; }}
+      onMouseLeave={e => { if (!isAct) e.currentTarget.style.background = "transparent"; }}
+      onClick={() => setActiveStationId(pin.id)}
+    >
+      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+        style={{ border: `1px solid ${isAct ? "var(--green)" : "var(--border-bright)"}`, color: isAct ? "var(--green)" : "var(--text-muted)" }}>
+        {pin.label}
+      </span>
+      <span className="flex-1 truncate">{pin.name.replace(/^stanoviště\s*/i, "")}</span>
+      {st === "done"    && <span style={{ color: "var(--green)",    fontSize: 9 }}>✓</span>}
+      {st === "skipped" && <span style={{ color: "var(--text-dim)", fontSize: 9 }}>—</span>}
+    </button>
   );
 }
 
 // ── Tab: Stanoviště ────────────────────────────────────────────────────────
 function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChange }) {
   const { t }    = useI18n();
-  const { adjustScore, adjustStationScore, addLogEntry } = useGame();
+  const { adjustScore, adjustStationScore, addLogEntry, updateTeamStationStatus } = useGame();
   const isOrg    = role === "Organizátor";
   const allPins  = eventData.pins ?? [];
   const myPins   = isOrg ? allPins : allPins.filter(p => p.vedouci === role);
   const teams    = eventData.teams ?? [];
+  const tree     = eventData.tree ?? [];
+  const teamStationStatuses = eventData.teamStationStatuses ?? {};
 
   const [activeStationId, setActiveStationId] = useState(myPins[0]?.id ?? null);
   const [alertSent, setAlertSent] = useState({});
   const [note, setNote] = useState("");
-  const [log, setLog]   = useState(eventData.actionLog ?? []);
+  const log = eventData.actionLog ?? [];
 
   const activePin = allPins.find(p => p.id === activeStationId) ?? myPins[0] ?? null;
-  const stStatus  = activePin ? (stationStatuses[activePin.id] ?? "active") : "active";
+  const stStatus  = activePin ? (stationStatuses[activePin.id] ?? "upcoming") : "upcoming";
+
+  // Build grouped station list by day → stage
+  const grouped = tree.map((day, di) => ({
+    di, label: day.label,
+    stages: day.stages.map((stage, si) => ({
+      si, label: stage.label,
+      pins: myPins.filter(p => p.day === di && p.stage === si),
+    })).filter(s => s.pins.length > 0),
+  })).filter(d => d.stages.length > 0);
+  const groupedIds = new Set(grouped.flatMap(d => d.stages.flatMap(s => s.pins.map(p => p.id))));
+  const ungrouped  = myPins.filter(p => !groupedIds.has(p.id));
+
+  const TEAM_STATUS_STYLE = {
+    upcoming: { label: t("live.team.upcoming") || "Bude",           color: "var(--text-dim)",    border: "1px solid var(--border)" },
+    done:     { label: t("live.team.done")     || "Splněno",        color: "var(--green)",       border: "1px solid var(--green)" },
+    skipped:  { label: t("live.team.skipped")  || "Neobjevilo se",  color: "#ef4444",            border: "1px solid #fca5a5" },
+  };
+
+  function cycleTeamStatus(teamId) {
+    if (!activePin) return;
+    const cur  = teamStationStatuses[activePin.id]?.[teamId] ?? "upcoming";
+    const next = TEAM_STATUS_ORDER[(TEAM_STATUS_ORDER.indexOf(cur) + 1) % TEAM_STATUS_ORDER.length];
+    updateTeamStationStatus(eventId, activePin.id, teamId, next);
+  }
 
   function adjust(team, delta) {
-    adjustScore(eventId, team.id, delta);
-    if (activePin) adjustStationScore(eventId, activePin.id, team.id, delta);
+    let d = delta;
+    if (d < 0 && activePin) {
+      const stationPts = eventData.stationScores?.[activePin.id]?.[team.id] ?? 0;
+      d = Math.max(d, -stationPts);
+      if (d === 0) return;
+    }
+    adjustScore(eventId, team.id, d);
+    if (activePin) adjustStationScore(eventId, activePin.id, team.id, d);
     const now  = new Date();
     const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const entry = { time, team: team.name, delta: `${delta > 0 ? "+" : ""}${delta}`, station: activePin?.name ?? "" };
-    setLog(prev => [entry, ...prev].slice(0, 50));
+    const entry = { id: Date.now(), time, team: team.name, delta: `${d > 0 ? "+" : ""}${d}`, station: activePin?.name ?? "", by: role };
     addLogEntry(eventId, entry);
   }
 
@@ -88,40 +160,31 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
     <div className="flex gap-3 flex-1 min-h-0">
 
       {/* Station list */}
-      <div className="cm-box flex-shrink-0 flex flex-col" style={{ width: 180 }}>
+      <div className="cm-box flex-shrink-0 flex flex-col w-28 sm:w-44">
         <div className="flex items-center justify-between px-3 py-2.5 flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border)" }}>
           <span className="cm-label" style={{ fontSize: 10 }}>{t("live.myStations")}</span>
           {!isOrg && <span className="cm-tag text-[9px]">{role}</span>}
         </div>
         <div className="overflow-y-auto flex-1">
-          {myPins.map(pin => {
-            const st    = stationStatuses[pin.id] ?? "active";
-            const isAct = pin.id === activeStationId;
-            return (
-              <button
-                key={pin.id}
-                className="w-full text-left px-3 py-2.5 font-mono text-xs flex items-center gap-2 transition-colors"
-                style={{
-                  borderBottom: "1px solid var(--border)",
-                  borderLeft: `2px solid ${isAct ? "var(--green)" : "transparent"}`,
-                  background: isAct ? "var(--green-glow)" : "transparent",
-                  color: isAct ? "var(--green)" : "var(--text-muted)",
-                }}
-                onMouseEnter={e => { if (!isAct) e.currentTarget.style.background = "var(--bg-hover)"; }}
-                onMouseLeave={e => { if (!isAct) e.currentTarget.style.background = "transparent"; }}
-                onClick={() => setActiveStationId(pin.id)}
-              >
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                  style={{ border: `1px solid ${isAct ? "var(--green)" : "var(--border-bright)"}`, color: isAct ? "var(--green)" : "var(--text-muted)" }}>
-                  {pin.label}
-                </span>
-                <span className="flex-1 truncate">{pin.name.split("—")[1]?.trim() ?? pin.name}</span>
-                {st === "done"    && <span style={{ color: "var(--green)",    fontSize: 9 }}>✓</span>}
-                {st === "skipped" && <span style={{ color: "var(--text-dim)", fontSize: 9 }}>—</span>}
-              </button>
-            );
-          })}
+          {grouped.map(day => (
+            <div key={day.di}>
+              <div className="px-3 py-1 font-mono font-bold text-[9px] uppercase tracking-wider flex-shrink-0"
+                style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)", color: "var(--green)" }}>
+                {day.label}
+              </div>
+              {day.stages.map(stage => (
+                <div key={stage.si}>
+                  <div className="px-4 py-0.5 font-mono text-[9px] italic"
+                    style={{ borderBottom: "1px solid var(--border)", color: "var(--text-dim)" }}>
+                    {stage.label}
+                  </div>
+                  {stage.pins.map(pin => <PinRow key={pin.id} pin={pin} stationStatuses={stationStatuses} activeStationId={activeStationId} setActiveStationId={setActiveStationId} />)}
+                </div>
+              ))}
+            </div>
+          ))}
+          {ungrouped.map(pin => <PinRow key={pin.id} pin={pin} stationStatuses={stationStatuses} activeStationId={activeStationId} setActiveStationId={setActiveStationId} />)}
           {myPins.length === 0 && (
             <div className="px-3 py-4 text-xs text-center font-mono" style={{ color: "var(--text-dim)" }}>
               Žádná přiřazená stanoviště
@@ -135,27 +198,41 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
         {activePin ? (
           <>
             {/* Header */}
-            <div className="cm-box p-3 flex gap-3">
+            <div className="cm-box p-3 flex gap-3 items-start">
+              {/* Circle label */}
               <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 font-mono"
                 style={{ background: "var(--green)", color: "var(--bg-base)" }}>
                 {activePin.label}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-mono font-bold text-sm" style={{ color: "var(--text-primary)" }}>{activePin.name}</div>
-                {activePin.vedouci && (
-                  <div className="font-mono text-[10px] mt-0.5" style={{ color: "var(--text-dim)" }}>🧑‍🏫 {activePin.vedouci}</div>
-                )}
-                {activePin.description && (
-                  <div className="font-mono text-[10px] mt-0.5 line-clamp-2" style={{ color: "var(--text-muted)" }}>{activePin.description}</div>
-                )}
-                {/* Status + alert buttons — 2×2 on mobile, row on sm+ */}
-                <div className="grid grid-cols-2 sm:flex sm:flex-row gap-1 mt-2" style={{ maxWidth: 280 }}>
+
+              {/* Info + buttons: row on sm+, column on mobile (buttons go 2×2 below) */}
+              <div className="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-3 items-start" style={{ minWidth: 0 }}>
+
+                {/* Text info */}
+                <div className="flex-1 w-full overflow-hidden">
+                  <div className="font-mono font-bold text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+                    style={{ color: "var(--text-primary)" }}>
+                    {activePin.name}
+                  </div>
+                  {activePin.vedouci && (
+                    <div className="font-mono text-[10px] mt-0.5" style={{ color: "var(--text-dim)" }}>🧑‍🏫 {activePin.vedouci}</div>
+                  )}
+                  {activePin.description && (
+                    <div className="font-mono text-[10px] mt-0.5 line-clamp-2" style={{ color: "var(--text-muted)" }}>{activePin.description}</div>
+                  )}
+                </div>
+
+                {/* Row 1: status pills */}
+                <div className="flex flex-wrap gap-1 w-full sm:w-auto flex-shrink-0">
                   {STATUS_ORDER.map(k => (
                     <StatusPill key={k} status={k} active={stStatus === k}
                       onClick={() => onStatusChange(activePin.id, k)} />
                   ))}
+                </div>
+                {/* Row 2: problem button aligned right */}
+                <div className="flex justify-end w-full sm:w-auto flex-shrink-0">
                   <button
-                    className="text-[10px] font-mono px-2 py-1 flex items-center justify-center gap-1 rounded transition-colors"
+                    className="text-[10px] font-mono px-2 py-1 flex items-center justify-center gap-1 rounded transition-colors whitespace-nowrap"
                     style={alertSent[activePin.id]
                       ? { border: "1px solid var(--border)", color: "var(--text-dim)", background: "transparent" }
                       : { border: "1px solid #fca5a5", color: "#ef4444", background: "rgba(239,68,68,0.06)" }}
@@ -167,15 +244,13 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
                     {alertSent[activePin.id] ? t("live.problemSent") : t("live.problem")}
                   </button>
                 </div>
+
               </div>
             </div>
 
             {/* Score cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {teams.map(team => {
-                const stationPts = eventData.stationScores?.[activePin.id]?.[team.id] ?? 0;
-                const maxPts     = activePin.maxPoints ?? null;
-                const pct        = maxPts ? Math.min(100, Math.round((stationPts / maxPts) * 100)) : null;
                 return (
                   <div key={team.id} className="cm-box p-3 lg:p-4 flex flex-col items-center gap-2 lg:gap-3">
                     <div className="flex items-center gap-2">
@@ -188,26 +263,29 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
                     </div>
                     <span className="cm-label" style={{ fontSize: 10 }}>{t("live.points")}</span>
 
-                    {/* Per-station score */}
-                    <div className="w-full flex flex-col gap-1.5"
-                      style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                      <div className="flex items-center justify-between font-mono text-[11px]">
-                        <span style={{ color: "var(--text-dim)" }}>Toto stanoviště</span>
-                        <span style={{ color: "var(--green)", fontWeight: 700 }}>
-                          {stationPts}
-                          {maxPts != null && <span style={{ color: "var(--text-muted)", fontWeight: 400 }}> / {maxPts}</span>}
-                        </span>
-                      </div>
-                      {maxPts != null && (
-                        <div className="w-full rounded-full overflow-hidden" style={{ height: 4, background: "var(--border)" }}>
-                          <div className="h-full rounded-full transition-all duration-300"
-                            style={{ width: `${pct}%`, background: pct >= 100 ? "var(--green)" : "var(--green)", opacity: pct >= 100 ? 1 : 0.6 }} />
+                    {/* Per-team status at this station */}
+                    {(() => {
+                      const tSt  = teamStationStatuses[activePin.id]?.[team.id] ?? "upcoming";
+                      const tCfg = TEAM_STATUS_STYLE[tSt] ?? TEAM_STATUS_STYLE.upcoming;
+                      return (
+                        <div className="w-full flex items-center justify-between"
+                          style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                          <span className="font-mono text-[10px]" style={{ color: "var(--text-dim)" }}>
+                            {t("live.teamStatus") || "Stav týmu"}
+                          </span>
+                          <button
+                            className="text-[10px] font-mono px-2 py-0.5 rounded transition-colors"
+                            style={{ border: tCfg.border, color: tCfg.color, background: "transparent" }}
+                            onClick={() => cycleTeamStatus(team.id)}
+                          >
+                            {tCfg.label}
+                          </button>
                         </div>
-                      )}
-                    </div>
+                      );
+                    })()}
 
                     <div className="grid grid-cols-4 gap-1.5 w-full">
-                      {[[-10, false], [-5, false], [+5, true], [+10, true]].map(([d, pos]) => (
+                      {[[-10, false], [-1, false], [+1, true], [+10, true]].map(([d, pos]) => (
                         <button
                           key={d}
                           className="py-1.5 font-mono font-bold text-xs rounded transition-colors"
@@ -234,14 +312,13 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
               <label className="cm-label block mb-2" style={{ fontSize: 10 }}>{t("live.noteLabel")}</label>
               <div className="flex gap-2">
                 <input className="cm-input" placeholder={t("live.notePlaceholder")}
-                  value={note} onChange={e => setNote(e.target.value)} />
+                  value={note} maxLength={200} onChange={e => setNote(e.target.value)} />
                 <button className="cm-btn flex-shrink-0" style={{ height: 42, fontSize: 13 }}
                   onClick={() => {
                     if (note.trim() && activePin) {
                       const now  = new Date();
                       const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-                      const entry = { time, team: `📝 ${note.trim()}`, delta: "", station: activePin.name ?? "" };
-                      setLog(prev => [entry, ...prev].slice(0, 50));
+                      const entry = { id: Date.now(), time, team: `📝 ${note.trim()}`, delta: "", station: activePin.name ?? "", by: role };
                       addLogEntry(eventId, entry);
                     }
                     setNote("");
@@ -263,7 +340,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
       <div className="cm-box flex-shrink-0 flex-col hidden xl:flex" style={{ width: 200 }}>
         <SectionHeader icon={Clock} label={t("live.recentActions")} />
         <div className="overflow-y-auto flex-1">
-          {log.map((a, i) => <LogEntry key={i} a={a} />)}
+          {log.map((a, i) => <LogEntry key={a.id ?? i} a={a} />)}
           {log.length === 0 && (
             <div className="px-3 py-4 text-xs text-center font-mono" style={{ color: "var(--text-dim)" }}>—</div>
           )}
@@ -278,18 +355,21 @@ function TabPrehled({ eventId, eventData, stationStatuses, onStatusChange }) {
   const { t }  = useI18n();
   const teams  = eventData.teams ?? [];
   const pins   = eventData.pins  ?? [];
+  const teamStationStatuses = eventData.teamStationStatuses ?? {};
   const ranked = [...teams].sort((a, b) => b.score - a.score);
   const log    = eventData.actionLog ?? [];
 
   const STATUS_BADGE = {
-    active:  t("live.status.active"),
-    done:    t("live.status.done"),
-    skipped: t("live.status.skipped"),
+    upcoming: t("live.status.upcoming"),
+    active:   t("live.status.active"),
+    done:     t("live.status.done"),
+    skipped:  t("live.status.skipped"),
   };
   const STATUS_STYLE = {
-    active:  { color: "var(--green)",    border: "1px solid var(--green)",        background: "var(--green-glow)" },
-    done:    { color: "var(--text-muted)", border: "1px solid var(--border-bright)", background: "var(--bg-hover)" },
-    skipped: { color: "var(--text-dim)", border: "1px solid var(--border)",        background: "transparent" },
+    upcoming: { color: "var(--text-dim)",   border: "1px solid var(--border)",        background: "transparent" },
+    active:   { color: "var(--green)",      border: "1px solid var(--green)",          background: "var(--green-glow)" },
+    done:     { color: "var(--text-muted)", border: "1px solid var(--border-bright)", background: "var(--bg-hover)" },
+    skipped:  { color: "var(--text-dim)",   border: "1px solid var(--border)",         background: "transparent" },
   };
 
   return (
@@ -351,27 +431,56 @@ function TabPrehled({ eventId, eventData, stationStatuses, onStatusChange }) {
           <SectionHeader icon={MapPin} label={t("live.stationStatus")} />
           <div className="overflow-y-auto flex-1">
             {pins.map(pin => {
-              const st  = stationStatuses[pin.id] ?? "active";
+              const st = stationStatuses[pin.id] ?? "upcoming";
+              const TEAM_STYLE = {
+                upcoming: { color: "var(--text-dim)",   border: "1px solid var(--border)" },
+                done:     { color: "var(--green)",       border: "1px solid var(--green)" },
+                skipped:  { color: "#ef4444",            border: "1px solid #fca5a5" },
+              };
+              const TEAM_LABEL = {
+                upcoming: t("live.team.upcoming") || "Bude",
+                done:     t("live.team.done")     || "Splněno",
+                skipped:  t("live.team.skipped")  || "Neobjevil se",
+              };
               return (
-                <div key={pin.id} className="flex items-center gap-2 px-3 py-2"
+                <div key={pin.id} className="px-3 py-2"
                   style={{ borderBottom: "1px solid var(--border)" }}>
-                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 font-mono"
-                    style={{ border: "1px solid var(--border-bright)", color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
-                    {pin.label}
-                  </span>
-                  <span className="flex-1 truncate font-mono text-xs" style={{ color: "var(--text-muted)" }}>
-                    {pin.name.split("—")[1]?.trim() ?? pin.name}
-                  </span>
-                  <button
-                    className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0 transition-colors"
-                    style={STATUS_STYLE[st] ?? STATUS_STYLE.active}
-                    onClick={() => onStatusChange(
-                      pin.id,
-                      STATUS_ORDER[(STATUS_ORDER.indexOf(st) + 1) % STATUS_ORDER.length]
-                    )}
-                  >
-                    {STATUS_BADGE[st]}
-                  </button>
+                  {/* Station row */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 font-mono"
+                      style={{ border: "1px solid var(--border-bright)", color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
+                      {pin.label}
+                    </span>
+                    <span className="flex-1 truncate font-mono text-xs" style={{ color: "var(--text-muted)" }}>
+                      {pin.name.replace(/^stanoviště\s*/i, "") || pin.name}
+                    </span>
+                    <button
+                      className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0 transition-colors"
+                      style={STATUS_STYLE[st] ?? STATUS_STYLE.upcoming}
+                      onClick={() => onStatusChange(pin.id, STATUS_ORDER[(STATUS_ORDER.indexOf(st) + 1) % STATUS_ORDER.length])}
+                    >
+                      {STATUS_BADGE[st]}
+                    </button>
+                  </div>
+                  {/* Per-team status */}
+                  <div className="flex flex-col gap-0.5 pl-7">
+                    {teams.map(team => {
+                      const tSt  = teamStationStatuses[pin.id]?.[team.id] ?? "upcoming";
+                      const tCfg = TEAM_STYLE[tSt] ?? TEAM_STYLE.upcoming;
+                      return (
+                        <div key={team.id} className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: team.color }} />
+                            <span className="font-mono text-[9px] truncate" style={{ color: "var(--text-dim)" }}>{team.name}</span>
+                          </div>
+                          <span className="font-mono text-[9px] px-1.5 py-0.5 rounded flex-shrink-0"
+                            style={{ ...tCfg, background: "transparent" }}>
+                            {TEAM_LABEL[tSt]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
@@ -382,7 +491,7 @@ function TabPrehled({ eventId, eventData, stationStatuses, onStatusChange }) {
         <div className="cm-box flex flex-col flex-1 min-h-0">
           <SectionHeader icon={Clock} label={t("live.recentActions")} />
           <div className="overflow-y-auto flex-1">
-            {log.map((a, i) => <LogEntry key={i} a={a} />)}
+            {log.map((a, i) => <LogEntry key={a.id ?? i} a={a} />)}
             {log.length === 0 && (
               <div className="px-3 py-4 text-xs text-center font-mono" style={{ color: "var(--text-dim)" }}>—</div>
             )}
@@ -411,16 +520,16 @@ export default function LiveView({ eventId, eventData, role }) {
   return (
     <div className="flex flex-col gap-3 h-full p-3" style={{ background: "var(--bg-base)" }}>
 
-      {/* Top bar — 3-column: tabs | timer (centered) | LIVE badge */}
-      <div className="cm-box px-3 py-2 flex items-center flex-shrink-0" style={{ gap: 0 }}>
-        {/* Left: tab switch */}
-        <div className="flex-1 flex items-center">
-          <div className="flex rounded-lg overflow-hidden flex-shrink-0"
+      {/* Top bar — single row on sm+, 3 stacked rows on mobile */}
+      <div className="cm-box px-3 py-2 flex flex-col sm:flex-row sm:items-center flex-shrink-0 gap-2 sm:gap-0">
+        {/* Row 1 / Left: tab switch */}
+        <div className="flex sm:flex-1 items-center">
+          <div className="flex rounded-lg overflow-hidden w-full sm:w-auto"
             style={{ border: "1px solid var(--border-bright)", height: 36 }}>
             {[["stanoviste", t("live.stations")], ["prehled", t("live.overview")]].map(([id, label]) => (
               <button
                 key={id}
-                className="px-3 lg:px-4 font-mono text-xs font-bold transition-colors whitespace-nowrap"
+                className="flex-1 sm:flex-none px-3 lg:px-4 font-mono text-xs font-bold transition-colors whitespace-nowrap"
                 style={{
                   height: 36,
                   background: tab === id ? "var(--green)" : "transparent",
@@ -434,8 +543,8 @@ export default function LiveView({ eventId, eventData, role }) {
           </div>
         </div>
 
-        {/* Center: timer (always centered) */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Row 2 / Center: timer controls */}
+        <div className="flex items-center justify-center gap-1.5 flex-shrink-0">
           <div className="font-mono font-bold tabular-nums px-3 flex items-center"
             style={{
               fontSize: 20,
@@ -458,8 +567,8 @@ export default function LiveView({ eventId, eventData, role }) {
           </button>
         </div>
 
-        {/* Right: LIVE badge */}
-        <div className="flex-1 flex items-center justify-end">
+        {/* Row 3 / Right: LIVE badge */}
+        <div className="flex items-center justify-center sm:justify-end sm:flex-1">
           <span className="cm-badge-live animate-pulse">{t("live.liveTag")}</span>
         </div>
       </div>

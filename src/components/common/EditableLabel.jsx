@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
 
-export default function EditableLabel({ value, onChange, className = "", style = {}, disabled = false }) {
+export default function EditableLabel({ value, onChange, maxLength = 80, className = "", style = {}, disabled = false }) {
   const [editing, setEditing] = useState(false);
   const [draft,   setDraft]   = useState(value);
 
@@ -28,6 +28,7 @@ export default function EditableLabel({ value, onChange, className = "", style =
           }}
           value={draft}
           autoFocus
+          maxLength={maxLength}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {
             if (e.key === "Enter")  confirm();
@@ -51,11 +52,11 @@ export default function EditableLabel({ value, onChange, className = "", style =
     <span className={`flex items-center gap-1 group flex-1 min-w-0 ${className}`} style={style}>
       <span className="truncate">{value}</span>
       <button
-        className="opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity"
-        style={{ color: "var(--text-dim)" }}
+        className="flex-shrink-0"
+        style={{ color: "var(--text-dim)", padding: "2px 4px" }}
         onClick={e => { e.stopPropagation(); setDraft(value); setEditing(true); }}
       >
-        <Pencil size={9} />
+        <Pencil size={13} />
       </button>
     </span>
   );

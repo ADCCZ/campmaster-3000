@@ -36,8 +36,8 @@ export function validateNonNegativeInteger(value) {
 
 export function validateDate(value) {
   if (!value || !String(value).trim()) return null; // optional
-  const regex = /^\d{1,2}\.\d{1,2}\.\d{4}$/;
-  if (!regex.test(String(value).trim())) return "validation.dateFormat";
+  // type="date" produces YYYY-MM-DD; browser prevents invalid input
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value).trim())) return "validation.dateFormat";
   return null;
 }
 
@@ -61,6 +61,19 @@ export function firstError(...validators) {
     if (result) return result;
   }
   return null;
+}
+
+/**
+ * Derive event status from dateStart/dateEnd ISO strings relative to today.
+ * Returns "upcoming" | "active" | "completed". Falls back to stored status.
+ */
+export function computeEventStatus(event) {
+  const { dateStart, dateEnd, status } = event ?? {};
+  if (!dateStart) return status ?? "upcoming";
+  const today = new Date().toISOString().slice(0, 10);
+  if (today < dateStart) return "upcoming";
+  if (today > (dateEnd || dateStart)) return "completed";
+  return "active";
 }
 
 /** Apply t() to a validation result (which can be a key string or [key, ...args]) */

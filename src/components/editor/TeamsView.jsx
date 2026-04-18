@@ -4,6 +4,7 @@ import { useI18n } from "../../context/I18nContext";
 import { useGame } from "../../context/GameContext";
 import ConfirmDialog from "../common/ConfirmDialog";
 import CustomSelect from "../common/CustomSelect";
+import CharCounter from "../common/CharCounter";
 import { validateRequired, tError } from "../../utils/validation";
 
 // ── Status badge ───────────────────────────────────────────────────────────
@@ -87,16 +88,6 @@ function ScoreCell({ score, max, canEdit, onChange }) {
   );
 }
 
-// ── Character counter ──────────────────────────────────────────────────────
-function CharCount({ value, max }) {
-  const len = value.length;
-  const pct = len / max;
-  const color = pct >= 1 ? "#ef4444" : pct >= 0.85 ? "#f59e0b" : "var(--text-dim)";
-  return (
-    <span className="font-mono text-[10px]" style={{ color }}>{len}/{max}</span>
-  );
-}
-
 // ── Team dialog ────────────────────────────────────────────────────────────
 function TeamDialog({ team, onSave, onClose, t }) {
   const [form,   setForm]   = useState({
@@ -160,7 +151,7 @@ function TeamDialog({ team, onSave, onClose, t }) {
           <div className="cm-field">
             <div className="flex items-center justify-between mb-1">
               <label className="cm-field-label" style={{ fontSize: 13 }}>{t("teams.dialog.name")} *</label>
-              <CharCount value={form.name} max={60} />
+              <CharCounter value={form.name} max={60} />
             </div>
             <input
               className={`cm-input ${errors.name ? "cm-input-error" : ""}`}
@@ -177,7 +168,7 @@ function TeamDialog({ team, onSave, onClose, t }) {
             <div className="cm-field">
               <div className="flex items-center justify-between mb-1">
                 <label className="cm-field-label" style={{ fontSize: 13 }}>{t("teams.dialog.leader")}</label>
-                <CharCount value={form.vedouci} max={60} />
+                <CharCounter value={form.vedouci} max={60} />
               </div>
               <input className="cm-input" style={{ height: 46, fontSize: 15 }}
                 placeholder={t("teams.dialog.leaderPlaceholder")}
@@ -187,7 +178,7 @@ function TeamDialog({ team, onSave, onClose, t }) {
             <div className="cm-field">
               <div className="flex items-center justify-between mb-1">
                 <label className="cm-field-label" style={{ fontSize: 13 }}>{t("teams.dialog.category")}</label>
-                <CharCount value={form.category} max={40} />
+                <CharCounter value={form.category} max={40} />
               </div>
               <input className="cm-input" style={{ height: 46, fontSize: 15 }}
                 placeholder={t("teams.dialog.categoryPlaceholder")}
@@ -247,7 +238,7 @@ function TeamDialog({ team, onSave, onClose, t }) {
           <div className="cm-field">
             <div className="flex items-center justify-between mb-1">
               <label className="cm-field-label" style={{ fontSize: 13 }}>{t("teams.dialog.note")}</label>
-              <CharCount value={form.note} max={200} />
+              <CharCounter value={form.note} max={200} />
             </div>
             <textarea
               className="cm-input"
@@ -322,7 +313,7 @@ export default function TeamsView({ eventId, eventData, role }) {
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
             style={{ color: "var(--text-dim)" }} />
           <input className="cm-input pl-8" placeholder={t("teams.search")}
-            value={search} onChange={e => setSearch(e.target.value)} />
+            maxLength={60} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         {isOrganizator && (
           <button className="cm-btn-primary flex-shrink-0" onClick={() => setEditingTeam("new")}>

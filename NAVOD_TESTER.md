@@ -5,57 +5,48 @@ Otevřete ji v prohlížeči na adrese, kterou vám dal autor. Nepotřebujete ú
 
 ---
 
-## Úkoly k vyzkoušení
+## Úkol 1: Vytvořte novou akci a sestavte strukturu hry
 
-### Úkol 1: Vytvořte novou hru a přidejte týmy
+1. Klikněte na **+ Nová akce**, projděte 3-krokový průvodce (název, datum, místo, týmy) a potvrďte **Vytvořit akci**
+2. V levém panelu editoru přidejte den, pod ním etapu a pak kliknutím na **+** u etapy přidejte stanoviště kliknutím do mapy
+3. Klikněte na stanoviště — v pravém panelu upravte jeho název, vedoucího a maximální počet bodů
 
-1. Na úvodní obrazovce klikněte na zelené tlačítko **+ Nová akce** (vpravo nahoře)
-2. Vyplňte název hry (např. „Testovací tábor"), místo konání a typ akce
-3. Klikněte **Vytvořit** — hra se otevře v editoru
-4. Přepněte se na záložku **Týmy** (spodní panel editoru)
-5. Přidejte alespoň 2 týmy tlačítkem **+** — každý tým pojmenujte a vyberte barvu
-6. Zkuste upravit počet členů týmu přímo v tabulce
+## Úkol 2: Sestavte strukturu dnů, etap a stanovišť
 
-### Úkol 2: Přidejte stanoviště na mapu a spusťte hru v Live režimu
+1. V levém panelu editoru přejmenujte den dvojklikem na jeho název (např. „Den 1 – Příjezd")
+2. Přidejte etapu tlačítkem **+ etapa** a přejmenujte ji (např. „Lesní hlídka")
+3. Klikněte na **+** u etapy — aktivuje se režim přidávání; pak klikněte do mapy na místo stanoviště
+4. Klikněte na stanoviště v mapě nebo v seznamu, v pravém panelu upravte jeho název a maximální počet bodů
+5. Přidejte alespoň 2 stanoviště a zkuste jedno přesunout tažením pinu na mapě
 
-1. V editoru klikněte do mapy (záložka **Mapa**) — přidá se nové stanoviště
-2. Po kliknutí na stanoviště vyplňte v pravém panelu jeho název a maximální počet bodů
-3. Přidejte 2–3 stanoviště
-4. Klikněte tlačítko **● Live** (nahoře uprostřed) pro přepnutí do živého režimu
-5. V Live režimu spusťte časomíru tlačítkem ▶ a nechte ji chvíli běžet, pak ji pozastavte
-6. Klikněte na libovolné stanoviště a zadejte body jednotlivým týmům tlačítky **+5** a **+10**
-7. Přepněte se na záložku **Přehled** a sledujte živý žebříček
+## Úkol 3: Spusťte Live režim a zadejte body
 
-### Úkol 3: Vyzkoušejte různé role a přepnutí jazyka
-
-1. V horní liště změňte roli z **Organizátor** na libovolného vedoucího (rozbalovací menu)
-2. Sledujte, jak se změní seznam stanovišť — vedoucí vidí jen svá přiřazená
-3. Přepněte jazyk tlačítkem **CS / EN** a ověřte, že se popisky přeloží
-4. Přepněte motiv (ikona slunce/měsíce) a ověřte funkčnost v tmavém i světlém režimu
+1. Přepněte do **Live** režimu tlačítkem v horní liště
+2. V záložce **Stanoviště** vyberte stanoviště ze seznamu vlevo, nastavte jeho stav (Bude → Probíhá) a zadejte body týmům tlačítky **+1 / +10**
+3. Pro každý tým nastavte stav kliknutím na badge „Stav týmu" (Bude / Splněno / Neobjevil se)
+4. Přepněte na záložku **Přehled** — sledujte živý žebříček a stav stanovišť s indikátory týmů
 
 ---
 
 ## Dílčí funkce k vyzkoušení
 
-- Otevřít existující hru ze seznamu na úvodní obrazovce
-- Smazat hru (ikona koše na kartě hry)
-- Přidat stanoviště kliknutím do mapy, přesunout ho tažením
-- Upravit název stanoviště v pravém panelu
-- Přidat tým, upravit jeho barvu, smazat tým
-- Zadat body týmu na stanovišti (+5, +10, −5, −10)
-- Sledovat "Toto stanoviště: X / max" pod celkovým skóre
-- Změnit stav stanoviště (Probíhá / Splněno / Přeskočeno)
-- Spustit, pozastavit a resetovat časomíru
-- Přepnout do přehledu a zkontrolovat pořadí týmů
-- Zavřít záložku a znovu otevřít aplikaci — data by měla být zachována
+- Přepínač jazyka **CS / EN** a světlého/tmavého motivu (ikona slunce/měsíce)
+- Smazání akce ikonou koše na kartě (s potvrzovacím dialogem)
+- Přesun stanoviště tažením pinu na mapě — GPS se aktualizuje v pravém panelu
+- Editace názvu dne nebo etapy přímo v levém stromu (dvojklik)
+- Změna šířky levého/pravého panelu editoru tažením oddělovače (desktop)
+- Skrytí/zobrazení panelů šipkovými tlačítky na okraji
+- Přidání a úprava týmů v záložce **Týmy** v editoru
+- Zavřít a znovu otevřít aplikaci — data by měla být zachována
 
 ---
 
 ## Co napsat do zprávy z testování
 
-Po vyzkoušení shrňte zážitek v textové podobě. Uveďte zejména:
+Po vyzkoušení shrňte své zkušenosti v textové podobě. Uveďte zejména:
+
 - Co fungovalo bez problémů
-- Co bylo nejasné nebo matoucí (popis i místo v aplikaci)
+- Co bylo nejasné nebo matoucí (popis + kde v aplikaci)
 - Co nefungovalo nebo způsobilo chybu
 - Celkový dojem z ovládání (přehlednost, rychlost odezvy)
 
