@@ -69,7 +69,7 @@ export function firstError(...validators) {
  */
 export function computeEventStatus(event) {
   const { dateStart, dateEnd, status } = event ?? {};
-  if (!dateStart) return "upcoming";
+  if (!dateStart) return status === "completed" ? "completed" : "upcoming";
   const today = new Date().toISOString().slice(0, 10);
   if (today < dateStart) return "upcoming";
   if (today > (dateEnd || dateStart)) return "completed";
