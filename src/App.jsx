@@ -37,6 +37,7 @@ function AppContent() {
     setActiveEventId(id);
     setActiveDay(-1);
     setActiveStage(-1);
+    setSidebarTab("map");
     setView("editor");
   }
 

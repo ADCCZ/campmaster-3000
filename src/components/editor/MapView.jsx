@@ -232,6 +232,16 @@ export default function MapView({ eventId, eventData, activeDay, activeStage, ro
     });
   }, [mapReady, visiblePins, selectedPin, routes, isOrganizator, isDark]); // eslint-disable-line
 
+  // ── Invalidate size on container resize (panel drag / toggle) ─────────────
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      if (mapRef.current) mapRef.current.invalidateSize();
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   // ── Pan to selected pin ────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
