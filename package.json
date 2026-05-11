@@ -1,7 +1,7 @@
 {
   "name": "tmwmf-semestral",
   "private": true,
-  "version": "0.0.0",
+  "version": "3.0.1-beta",
   "type": "module",
   "scripts": {
     "dev": "vite",
