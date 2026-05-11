@@ -9,7 +9,7 @@ export default {
       },
       fontFamily: {
         sans: ["'DM Sans'", "system-ui", "sans-serif"],
-        mono: ["'Space Mono'", "'Courier New'", "monospace"],
+        mono: ["'JetBrains Mono'", "'Courier New'", "monospace"],
       },
       fontSize: {
         "xs":   ["0.8125rem", { lineHeight: "1.25rem" }],   // 13px  (was 12)

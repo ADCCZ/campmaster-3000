@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Loader, MapPin } from "lucide-react";
+import { Plus, Loader, MapPin, X } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 import { useGame } from "../../context/GameContext";
 import ModalShell from "../common/ModalShell";
@@ -79,6 +79,9 @@ export default function NewGameWizard({ onClose, onCreated }) {
     e.name      = tError(t, validateRequired(form.name));
     e.dateStart = tError(t, validateRequired(form.dateStart));
     e.dateEnd   = tError(t, validateRequired(form.dateEnd));
+    if (!e.dateStart && !e.dateEnd && form.dateStart && form.dateEnd && form.dateStart > form.dateEnd) {
+      e.dateEnd = t("validation.dateEndBeforeStart");
+    }
     e.location  = tError(t, validateRequired(form.location));
     setErrors(e);
     return !Object.values(e).some(Boolean);
@@ -106,6 +109,11 @@ export default function NewGameWizard({ onClose, onCreated }) {
   function addTeam() {
     const name = newTeamName.trim();
     if (!name) return;
+    const limit = Number(form.teamCount) || 0;
+    if (limit > 0 && teams.length >= limit) {
+      setErrors(prev => ({ ...prev, teamCount: t("validation.teamCountExceeded") }));
+      return;
+    }
     const colors = ["#ef4444","#3b82f6","#22c55e","#eab308","#8b5cf6","#f97316","#06b6d4","#ec4899"];
     setTeams(prev => [...prev, {
       id: `t${Date.now()}`,
@@ -268,11 +276,17 @@ export default function NewGameWizard({ onClose, onCreated }) {
             <div className="cm-box p-2 space-y-1">
               {teams.map(team => (
                 <div key={team.id} className="flex items-center gap-2 text-xs">
-                  <div className="w-3 h-3 rounded-full flex-shrink-0 border border-gray-300"
-                    style={{ background: team.color }} />
-                  <span className="flex-1 text-gray-700">{team.name}</span>
-                  <button className="text-gray-400 hover:text-red-500 text-[10px]"
-                    onClick={() => setTeams(prev => prev.filter(t => t.id !== team.id))}>×</button>
+                  <div className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ background: team.color, border: "1px solid var(--border-bright)" }} />
+                  <span className="flex-1 font-mono" style={{ color: "var(--text-primary)" }}>{team.name}</span>
+                  <button
+                    className="flex items-center justify-center rounded transition-colors flex-shrink-0"
+                    style={{ width: 26, height: 26, color: "var(--text-dim)" }}
+                    onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                    onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
+                    onClick={() => setTeams(prev => prev.filter(t => t.id !== team.id))}
+                    title="Odebrat tým"
+                  ><X size={16} /></button>
                 </div>
               ))}
             </div>
@@ -298,7 +312,7 @@ export default function NewGameWizard({ onClose, onCreated }) {
               [t("wizard.summaryName"),     form.name || "—"],
               [t("wizard.summaryDate"),     form.dateStart || form.dateEnd ? `${fmtDate(form.dateStart)} – ${fmtDate(form.dateEnd)}` : "—"],
               [t("wizard.summaryLocation"), form.location || "—"],
-              [t("wizard.summaryTeams"),    `${teams.length || form.teamCount} týmů`],
+              [t("wizard.summaryTeams"),    `${teams.length || form.teamCount}`],
               [t("wizard.summaryType"),     form.type],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3 pb-1" style={{ borderBottom: "1px solid var(--border)" }}>

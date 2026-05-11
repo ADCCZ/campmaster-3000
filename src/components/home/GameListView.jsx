@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Play, Trash2, MapPin, Users, Calendar } from "lucide-react";
+import { Plus, Play, Trash2, MapPin, Users, Calendar, Pencil, Check, X } from "lucide-react";
 import { useGame } from "../../context/GameContext";
 import { useI18n } from "../../context/I18nContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -7,16 +7,30 @@ import ConfirmDialog from "../common/ConfirmDialog";
 import { computeEventStatus } from "../../utils/validation";
 
 const STATUS_CONFIG = {
-  active:    { color: "#22c55e", shadow: "0 0 6px #22c55e66", label: "Probíhá"      },
-  completed: { color: "#6b7280", shadow: "none",               label: "Dokončeno"    },
-  archived:  { color: "#6b7280", shadow: "none",               label: "Dokončeno"    },
-  upcoming:  { color: "#60a5fa", shadow: "0 0 6px #60a5fa66", label: "Nadcházející" },
+  active:    { color: "#22c55e", shadow: "0 0 6px #22c55e66" },
+  completed: { color: "#6b7280", shadow: "none"               },
+  archived:  { color: "#6b7280", shadow: "none"               },
+  upcoming:  { color: "#60a5fa", shadow: "0 0 6px #60a5fa66" },
 };
 
-function GameCard({ event, onOpen, onDelete }) {
+function GameCard({ event, onOpen, onDelete, onRename }) {
   const { t } = useI18n();
   const { dark } = useTheme();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+
+  function startEdit(e) {
+    e.stopPropagation();
+    setNameInput(event.name);
+    setEditingName(true);
+  }
+
+  function commitEdit() {
+    const trimmed = nameInput.trim();
+    if (trimmed && trimmed !== event.name) onRename(event.id, trimmed);
+    setEditingName(false);
+  }
 
   const pinCount  = event.pins?.length ?? 0;
   const teamCount = event.teams?.length ?? 0;
@@ -32,15 +46,52 @@ function GameCard({ event, onOpen, onDelete }) {
       >
         {/* Top: title + status indicator */}
         <div className="flex items-start justify-between gap-3 mb-0">
-          <div className="font-bold text-base leading-snug" style={{ color: "var(--text-primary)" }}>
-            {event.icon} {event.name}
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            {editingName ? (
+              <div className="flex items-center gap-1 flex-1 min-w-0" onClick={e => e.stopPropagation()}>
+                <input
+                  className="cm-input text-sm font-bold flex-1"
+                  value={nameInput}
+                  autoFocus
+                  maxLength={80}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingName(false); }}
+                />
+                <button
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={commitEdit}
+                  title="Uložit"
+                  style={{ color: "var(--green)", padding: 3, display: "flex", alignItems: "center", flexShrink: 0 }}
+                ><Check size={13} /></button>
+                <button
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => setEditingName(false)}
+                  title="Zrušit"
+                  style={{ color: "#ef4444", padding: 3, display: "flex", alignItems: "center", flexShrink: 0 }}
+                ><X size={13} /></button>
+              </div>
+            ) : (
+              <>
+                <div className="font-bold text-base leading-snug truncate" style={{ color: "var(--text-primary)" }}>
+                  {event.icon} {event.name}
+                </div>
+                <button
+                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ color: "var(--text-dim)", padding: 2, display: "flex", alignItems: "center" }}
+                  onClick={startEdit}
+                  title={t("home.rename")}
+                >
+                  <Pencil size={12} />
+                </button>
+              </>
+            )}
           </div>
           {statusCfg && (
             <div
               className="flex items-center gap-1.5 flex-shrink-0 mt-0.5"
               style={{ padding: "2px 6px", border: `1px solid ${statusCfg.color}33`, borderRadius: 6 }}
             >
-              <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: statusCfg.color }}>{statusCfg.label}</span>
+              <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: statusCfg.color }}>{t(`home.status.${statusKey}`)}</span>
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: statusCfg.color, boxShadow: statusCfg.shadow }} />
             </div>
           )}
@@ -106,7 +157,7 @@ function GameCard({ event, onOpen, onDelete }) {
 }
 
 export default function GameListView({ onOpenGame }) {
-  const { events, deleteEvent } = useGame();
+  const { events, deleteEvent, updateEvent } = useGame();
   const { t } = useI18n();
   const eventList = Object.values(events);
 
@@ -136,13 +187,14 @@ export default function GameListView({ onOpenGame }) {
           </p>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-5 items-start justify-center sm:justify-start">
+        <div className="flex flex-wrap gap-5 items-start justify-center">
           {eventList.map(event => (
             <GameCard
               key={event.id}
               event={event}
               onOpen={onOpenGame}
               onDelete={deleteEvent}
+              onRename={(id, name) => updateEvent(id, { name })}
             />
           ))}
         </div>

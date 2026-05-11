@@ -7,7 +7,12 @@
       "WebFetch(domain:claude.ai)",
       "Bash(npm run:*)",
       "Bash(npm list:*)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(pandoc \"recenze campmaster.docx\" -t plain)",
+      "Bash(pandoc \"report - campmaster.docx\" -t plain)",
+      "Bash(dir /b \"D:\\\\ZCU\\\\UUR\\\\tmwmf-semestral\")",
+      "PowerShell(Get-ChildItem \"D:\\\\ZCU\\\\UUR\\\\tmwmf-semestral\" -File | Where-Object { $_.Extension -in @\\(\".md\", \".docx\"\\) } | Select-Object Name)",
+      "PowerShell(Rename-Item *)"
     ]
   },
   "enabledPlugins": {

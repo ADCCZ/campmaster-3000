@@ -49,6 +49,7 @@ export default {
   "props.descriptionPlaceholder": "Popis úkolu pro týmy...",
   "props.maxPoints": "Max. bodů",
   "props.save": "✓ Uložit",
+  "props.leaderHint": "Přebíráno z vedoucích ostatních stanovišť",
   "props.delete":          "Smazat stanoviště",
   "props.cancelChanges":   "Zrušit změny",
   "props.day": "Den",
@@ -129,6 +130,11 @@ export default {
   "live.change": "Změna",
   "live.station": "Stanoviště",
   "live.liveTag": "LIVE",
+  "live.noStations": "Žádná přiřazená stanoviště",
+  "live.selectStation": "Vyberte stanoviště ze seznamu vlevo",
+  "live.stationPoints": "b. na stanovišti",
+  "live.deltaPlaceholder": "±libovolně",
+  "live.applyDelta": "Zadat",
 
   // Timer
   "timer.start": "Spustit",
@@ -158,7 +164,7 @@ export default {
   "wizard.type.troop": "Oddílová",
   "wizard.teamCount": "Počet týmů",
   "wizard.maxPlayers": "Max. hráčů na tým",
-  "wizard.addTeam": "Přidat tým manuálně",
+  "wizard.addTeam": "Přidat tým",
   "wizard.confirmNote": "⚠ Po potvrzení bude vytvořena nová akce. Aktuální data budou zachována.",
   "wizard.cancel": "Zrušit",
   "wizard.back": "← Zpět",
@@ -172,7 +178,7 @@ export default {
 
   // About dialog
   "about.title": "O aplikaci",
-  "about.version": "Verze 2.0.4 — beta",
+  "about.version": "Verze 2.0.5 — beta",
   "about.desc1": "Systém pro správu táborových her a aktivit v reálném čase.",
   "about.desc2": "Sledování bodů, správa týmů, mapová navigace stanovišť.",
   "about.author": "Autor",
@@ -192,8 +198,20 @@ export default {
   "home.stations": "stanovišť",
   "home.open": "Otevřít",
   "home.delete": "Smazat",
+  "home.rename": "Přejmenovat",
   "home.empty": "Žádné akce. Vytvořte novou akci tlačítkem +",
   "home.confirmDelete": "Opravdu smazat akci",
+  "home.status.upcoming": "Nadcházející",
+  "home.status.active": "Probíhá",
+  "home.status.completed": "Dokončeno",
+
+  // Editor panels
+  "editor.hide": "Skrýt",
+  "editor.showTree": "Strom",
+  "editor.showInfo": "Info",
+
+  // Stats
+  "stats.ranking": "Pořadí týmů",
 
   // Common
   "common.confirm": "Potvrdit",
@@ -217,4 +235,6 @@ export default {
   "validation.latRange": "Zeměpisná šířka musí být -90 až 90",
   "validation.lngRange": "Zeměpisná délka musí být -180 až 180",
   "validation.nameExists": "Název již existuje",
+  "validation.teamCountExceeded": "Byl dosažen limit počtu týmů",
+  "validation.dateEndBeforeStart": "Datum konce musí být po datu začátku",
 };

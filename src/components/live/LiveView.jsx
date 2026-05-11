@@ -112,6 +112,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
   const [activeStationId, setActiveStationId] = useState(myPins[0]?.id ?? null);
   const [alertSent, setAlertSent] = useState({});
   const [note, setNote] = useState("");
+  const [customDelta, setCustomDelta] = useState({});
   const log = eventData.actionLog ?? [];
 
   const activePin = allPins.find(p => p.id === activeStationId) ?? myPins[0] ?? null;
@@ -139,6 +140,12 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
     const cur  = teamStationStatuses[activePin.id]?.[teamId] ?? "upcoming";
     const next = TEAM_STATUS_ORDER[(TEAM_STATUS_ORDER.indexOf(cur) + 1) % TEAM_STATUS_ORDER.length];
     updateTeamStationStatus(eventId, activePin.id, teamId, next);
+  }
+
+  function applyCustomDelta(team) {
+    const val = parseInt(customDelta[team.id] ?? "", 10);
+    if (!isNaN(val) && val !== 0) adjust(team, val);
+    setCustomDelta(prev => ({ ...prev, [team.id]: "" }));
   }
 
   function adjust(team, delta) {
@@ -187,7 +194,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
           {ungrouped.map(pin => <PinRow key={pin.id} pin={pin} stationStatuses={stationStatuses} activeStationId={activeStationId} setActiveStationId={setActiveStationId} />)}
           {myPins.length === 0 && (
             <div className="px-3 py-4 text-xs text-center font-mono" style={{ color: "var(--text-dim)" }}>
-              Žádná přiřazená stanoviště
+              {t("live.noStations")}
             </div>
           )}
         </div>
@@ -251,6 +258,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
             {/* Score cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {teams.map(team => {
+                const stationPts = eventData.stationScores?.[activePin.id]?.[team.id] ?? 0;
                 return (
                   <div key={team.id} className="cm-box p-3 lg:p-4 flex flex-col items-center gap-2 lg:gap-3">
                     <div className="flex items-center gap-2">
@@ -262,6 +270,10 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
                       {(team.score ?? 0).toLocaleString("cs")}
                     </div>
                     <span className="cm-label" style={{ fontSize: 10 }}>{t("live.points")}</span>
+                    <div className="flex items-center gap-1 font-mono text-xs font-semibold" style={{ color: stationPts > 0 ? "var(--green)" : "var(--text-muted)" }}>
+                      <span className="tabular-nums">{stationPts}</span>
+                      <span>{t("live.stationPoints")}</span>
+                    </div>
 
                     {/* Per-team status at this station */}
                     {(() => {
@@ -285,22 +297,46 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
                     })()}
 
                     <div className="grid grid-cols-4 gap-1.5 w-full">
-                      {[[-10, false], [-1, false], [+1, true], [+10, true]].map(([d, pos]) => (
-                        <button
-                          key={d}
-                          className="py-1.5 font-mono font-bold text-xs rounded transition-colors"
-                          style={{
-                            border:      pos ? "1px solid var(--green)" : "1px solid #fca5a5",
-                            color:       pos ? "var(--green)"           : "#ef4444",
-                            background:  "transparent",
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = pos ? "var(--green-glow)" : "rgba(239,68,68,0.08)"}
-                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                          onClick={() => adjust(team, d)}
-                        >
-                          {d > 0 ? `+${d}` : d}
-                        </button>
-                      ))}
+                      {[[-10, false], [-1, false], [+1, true], [+10, true]].map(([d, pos]) => {
+                        const disabled = !pos && (stationPts === 0 || team.score === 0);
+                        return (
+                          <button
+                            key={d}
+                            disabled={disabled}
+                            className="py-1.5 font-mono font-bold text-xs rounded transition-colors"
+                            style={{
+                              border:     disabled ? "1px solid var(--border)" : pos ? "1px solid var(--green)" : "1px solid #fca5a5",
+                              color:      disabled ? "var(--text-dim)"         : pos ? "var(--green)"           : "#ef4444",
+                              background: "transparent",
+                              cursor:     disabled ? "not-allowed" : "pointer",
+                              opacity:    disabled ? 0.4 : 1,
+                            }}
+                            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = pos ? "var(--green-glow)" : "rgba(239,68,68,0.08)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                            onClick={() => adjust(team, d)}
+                          >
+                            {d > 0 ? `+${d}` : d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-1.5 w-full">
+                      <input
+                        type="number"
+                        className="cm-input flex-1 text-center font-mono font-bold text-xs"
+                        style={{ height: 32 }}
+                        placeholder={t("live.deltaPlaceholder")}
+                        value={customDelta[team.id] ?? ""}
+                        onChange={e => setCustomDelta(prev => ({ ...prev, [team.id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === "Enter") applyCustomDelta(team); }}
+                      />
+                      <button
+                        className="cm-btn font-mono font-bold text-xs flex-shrink-0"
+                        style={{ height: 32, padding: "0 10px" }}
+                        onClick={() => applyCustomDelta(team)}
+                      >
+                        {t("live.applyDelta")}
+                      </button>
                     </div>
                   </div>
                 );
@@ -331,7 +367,7 @@ function TabStanoviste({ eventId, eventData, role, stationStatuses, onStatusChan
         ) : (
           <div className="cm-dashed flex-1 flex items-center justify-center font-mono text-xs"
             style={{ color: "var(--text-dim)" }}>
-            Vyberte stanoviště ze seznamu vlevo
+            {t("live.selectStation")}
           </div>
         )}
       </div>
@@ -382,7 +418,7 @@ function TabPrehled({ eventId, eventData, stationStatuses, onStatusChange }) {
           <table className="w-full font-mono text-sm border-collapse">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
-                {[t("live.rank"), t("live.team"), t("teams.col.score"), t("live.change"), t("live.station")].map(h => (
+                {[t("live.rank"), t("live.team"), t("teams.col.score"), t("live.station")].map(h => (
                   <th key={h} className="text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider"
                     style={{ color: "var(--text-muted)" }}>
                     {h}
@@ -409,9 +445,6 @@ function TabPrehled({ eventId, eventData, stationStatuses, onStatusChange }) {
                   <td className="px-4 py-3 font-black tabular-nums text-lg"
                     style={{ color: rank === 0 ? "var(--green)" : "var(--text-primary)" }}>
                     {(team.score ?? 0).toLocaleString("cs")}
-                  </td>
-                  <td className="px-4 py-3 text-xs" style={{ color: "var(--text-muted)" }}>
-                    {log.find(e => e.team === team.name)?.delta ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-xs" style={{ color: "var(--text-dim)" }}>
                     {pins[rank % pins.length]?.name?.split("—")[1]?.trim() ?? "—"}

@@ -1,6 +1,8 @@
-import { Moon, Sun, Info, Plus, ChevronLeft, Tent } from "lucide-react";
+import { useState } from "react";
+import { Moon, Sun, Info, Plus, ChevronLeft, Tent, Pencil, Check, X } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 import { useTheme } from "../../context/ThemeContext";
+import { useGame } from "../../context/GameContext";
 import { getVedouciList } from "../../data/defaultData";
 import CustomSelect from "../common/CustomSelect";
 
@@ -21,6 +23,24 @@ export default function AppHeader({
 }) {
   const { t, lang, setLang } = useI18n();
   const { dark, toggle }     = useTheme();
+  const { updateEvent }      = useGame();
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput,   setNameInput]   = useState("");
+
+  function startRename(e) {
+    e.stopPropagation();
+    setNameInput(eventData?.name ?? "");
+    setEditingName(true);
+  }
+
+  function commitRename() {
+    const trimmed = nameInput.trim();
+    if (trimmed && eventData?.id && trimmed !== eventData.name) {
+      updateEvent(eventData.id, { name: trimmed });
+    }
+    setEditingName(false);
+  }
 
   const isHome = view === "home";
 
@@ -183,9 +203,41 @@ export default function AppHeader({
             <div className="cm-logo-icon flex-shrink-0" style={{ width: 28, height: 28, borderRadius: 6, paddingLeft: 1, paddingRight: 4 }}>
               <Tent size={14} color={dark ? "#0a0f0a" : "#fff"} />
             </div>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, display: "block" }}>
-              {eventData?.name ?? "CampMaster 3000"}
-            </span>
+            {editingName ? (
+              <>
+                <input
+                  className="cm-input"
+                  style={{ fontSize: 12, height: 24, padding: "0 6px", flex: 1, minWidth: 0 }}
+                  value={nameInput}
+                  autoFocus
+                  maxLength={80}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingName(false); }}
+                />
+                <button onMouseDown={e => e.preventDefault()} onClick={commitRename} title="Uložit"
+                  style={{ color: "var(--green)", padding: 2, display: "flex", alignItems: "center", flexShrink: 0 }}>
+                  <Check size={12} />
+                </button>
+                <button onMouseDown={e => e.preventDefault()} onClick={() => setEditingName(false)} title="Zrušit"
+                  style={{ color: "#ef4444", padding: 2, display: "flex", alignItems: "center", flexShrink: 0 }}>
+                  <X size={12} />
+                </button>
+              </>
+            ) : (
+              <>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, display: "block" }}>
+                  {eventData?.name ?? "CampMaster 3000"}
+                </span>
+                <button
+                  className="flex-shrink-0 ml-1"
+                  style={{ color: "var(--text-dim)", padding: 1, display: "flex", alignItems: "center" }}
+                  onClick={startRename}
+                  title={t("home.rename")}
+                >
+                  <Pencil size={11} />
+                </button>
+              </>
+            )}
           </div>
           <div className="cm-icons-inline items-center gap-1.5 flex-shrink-0">{iconButtons}</div>
         </div>
@@ -229,9 +281,41 @@ export default function AppHeader({
           <div className="cm-logo-icon flex-shrink-0" style={{ paddingLeft: 2, paddingRight: 6 }}>
             <Tent size={20} color={dark ? "#0a0f0a" : "#fff"} />
           </div>
-          <span className="truncate">
-            {isHome ? "CampMaster 3000" : (eventData?.name ?? "CampMaster 3000")}
-          </span>
+          {isHome ? (
+            <span className="truncate">CampMaster 3000</span>
+          ) : editingName ? (
+            <>
+              <input
+                className="cm-input text-sm font-mono"
+                style={{ height: 28, padding: "0 8px", flex: 1, minWidth: 0 }}
+                value={nameInput}
+                autoFocus
+                maxLength={80}
+                onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingName(false); }}
+              />
+              <button onMouseDown={e => e.preventDefault()} onClick={commitRename} title="Uložit"
+                style={{ color: "var(--green)", padding: 3, display: "flex", alignItems: "center", flexShrink: 0 }}>
+                <Check size={14} />
+              </button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => setEditingName(false)} title="Zrušit"
+                style={{ color: "#ef4444", padding: 3, display: "flex", alignItems: "center", flexShrink: 0 }}>
+                <X size={14} />
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="truncate">{eventData?.name ?? "CampMaster 3000"}</span>
+              <button
+                className="flex-shrink-0 ml-1"
+                style={{ color: "var(--text-dim)", padding: 2, display: "flex", alignItems: "center" }}
+                onClick={startRename}
+                title={t("home.rename")}
+              >
+                <Pencil size={13} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 

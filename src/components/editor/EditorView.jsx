@@ -287,7 +287,7 @@ export default function EditorView({ sidebarTab, setSidebarTab, activeDay, activ
             {showLeft && <div className="hidden lg:flex"><ResizeHandle onDrag={dragLeft} /></div>}
 
             <EdgeToggle side="left" open={showLeft} onClick={() => setShowLeft(v => !v)}
-              label={showLeft ? "Skrýt" : "Strom"} />
+              label={showLeft ? t("editor.hide") : t("editor.showTree")} />
 
             {/* Center: map — zIndex:0 contains Leaflet's internal z-indices so our overlays win */}
             <div className="flex-1 min-w-0 overflow-hidden flex flex-col" style={{ position: "relative", zIndex: 0 }}>
@@ -305,7 +305,7 @@ export default function EditorView({ sidebarTab, setSidebarTab, activeDay, activ
             </div>
 
             <EdgeToggle side="right" open={showRight} onClick={() => setShowRight(v => !v)}
-              label={showRight ? "Skrýt" : "Info"} />
+              label={showRight ? t("editor.hide") : t("editor.showInfo")} />
 
             {showRight && <div className="hidden lg:flex"><ResizeHandle onDrag={dragRight} /></div>}
 

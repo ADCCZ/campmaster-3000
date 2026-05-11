@@ -7,9 +7,9 @@ export default function ConfirmDialog({ message, onConfirm, onCancel }) {
     <ModalShell title={t("common.confirm")} onClose={onCancel} width="max-w-sm">
       <div className="space-y-4 font-mono">
         <p className="text-sm" style={{ color: "var(--text-primary)" }}>{message}</p>
-        <div className="flex justify-end gap-2">
-          <button className="cm-btn" onClick={onCancel}>{t("common.cancel")}</button>
-          <button className="cm-btn-danger" onClick={onConfirm}>{t("common.delete")}</button>
+        <div className="flex gap-2">
+          <button className="cm-btn flex-1" style={{ height: 42 }} onClick={onCancel}>{t("common.cancel")}</button>
+          <button className="cm-btn-danger flex-1" style={{ height: 42 }} onClick={onConfirm}>{t("common.delete")}</button>
         </div>
       </div>
     </ModalShell>

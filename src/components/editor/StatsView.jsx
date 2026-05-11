@@ -255,7 +255,7 @@ export default function StatsView({ eventData, activeDay, activeStage }) {
             <div className="flex items-center gap-2 px-4 py-3"
               style={{ borderBottom: "1px solid var(--border)" }}>
               <Trophy size={12} style={{ color: green }} />
-              <span className="cm-label" style={{ fontSize: 11 }}>Pořadí týmů</span>
+              <span className="cm-label" style={{ fontSize: 11 }}>{t("stats.ranking")}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="font-mono text-sm border-collapse" style={{ minWidth: 480, width: "100%" }}>

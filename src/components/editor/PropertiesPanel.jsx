@@ -284,6 +284,9 @@ export default function PropertiesPanel({ eventId, eventData, selectedPin, role,
                 placeholder={t("props.leaderSelect")}
                 options={[{ value: "", label: t("props.noLeader") || "Žádné" }, ...leaders.filter(l => l !== "Organizátor").map(l => ({ value: l, label: l }))]}
               />
+              <span className="text-[10px] font-mono mt-0.5 block" style={{ color: "var(--text-dim)" }}>
+                ℹ {t("props.leaderHint")}
+              </span>
             </Field>
           )}
           {!isOrganizator && selPin.vedouci && (
